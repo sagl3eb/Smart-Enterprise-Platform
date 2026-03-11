@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sidebar-bg: #13102A;
+  --sidebar-surface: #1A1635;
+  --sidebar-border: #2A2550;
+  --sidebar-text: #F1EEFF;
+  --sidebar-sub: #A89FC8;
+  --sidebar-muted: #6B5F8F;
+  --accent: #5B21B6;
+  --accent-lt: #7C3AED;
+  --gold: #B45309;
+  --gold-vivid: #D97706;
+}
+
+body {
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9B93B8;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #6B5F8F;
+}

@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sep-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sep_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sep_secret_2025}
+      POSTGRES_DB: ${POSTGRES_DB:-smart_enterprise}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./database/schema_full.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sep_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sep-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sep-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sep_admin}:${POSTGRES_PASSWORD:-sep_secret_2025}@postgres:5432/${POSTGRES_DB:-smart_enterprise}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-sep_access_secret_key_2025}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-sep_refresh_secret_key_2025}
+      JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+      JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+      ML_SERVICE_URL: http://ml-service:8000
+      CORS_ORIGIN: http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - sep-network
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: sep-ml-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sep_admin}:${POSTGRES_PASSWORD:-sep_secret_2025}@postgres:5432/${POSTGRES_DB:-smart_enterprise}?schema=public
+      MODEL_DIR: /app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./ml-service/app:/app/app
+      - ml_models:/app/models
+    networks:
+      - sep-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sep-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000/api/v1
+      VITE_ML_API_BASE_URL: http://localhost:8000
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+    networks:
+      - sep-network
+
+volumes:
+  pg_data:
+    driver: local
+  ml_models:
+    driver: local
+
+networks:
+  sep-network:
+    driver: bridge
