@@ -45,9 +45,9 @@ app.get("/api/v1/health", (_req, res) => {
   });
 });
 
-// ── Routes (will be added in subsequent sessions) ──────────
-// import authRoutes from "./routes/auth";
-// import hrRoutes from "./routes/hr";
+// ── Routes ──────────────────────────────────────────────────
+import authRoutes from "./routes/auth";
+import hrRoutes from "./routes/hr";
 // import financeRoutes from "./routes/finance";
 // import accountingRoutes from "./routes/accounting";
 // import ictRoutes from "./routes/ict";
@@ -58,8 +58,8 @@ app.get("/api/v1/health", (_req, res) => {
 // import dashboardRoutes from "./routes/dashboard";
 // import chatbotRoutes from "./routes/chatbot";
 
-// app.use("/api/v1/auth", authRoutes);
-// app.use("/api/v1/hr", hrRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/hr", hrRoutes);
 // app.use("/api/v1/finance", financeRoutes);
 // app.use("/api/v1/accounting", accountingRoutes);
 // app.use("/api/v1/ict", ictRoutes);
