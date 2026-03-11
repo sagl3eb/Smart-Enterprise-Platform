@@ -48,8 +48,8 @@ app.get("/api/v1/health", (_req, res) => {
 // ── Routes ──────────────────────────────────────────────────
 import authRoutes from "./routes/auth";
 import hrRoutes from "./routes/hr";
-// import financeRoutes from "./routes/finance";
-// import accountingRoutes from "./routes/accounting";
+import financeRoutes from "./routes/finance";
+import accountingRoutes from "./routes/accounting";
 // import ictRoutes from "./routes/ict";
 // import constructionRoutes from "./routes/construction";
 // import workforceRoutes from "./routes/workforce";
@@ -60,8 +60,8 @@ import hrRoutes from "./routes/hr";
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/hr", hrRoutes);
-// app.use("/api/v1/finance", financeRoutes);
-// app.use("/api/v1/accounting", accountingRoutes);
+app.use("/api/v1/finance", financeRoutes);
+app.use("/api/v1/accounting", accountingRoutes);
 // app.use("/api/v1/ict", ictRoutes);
 // app.use("/api/v1/construction", constructionRoutes);
 // app.use("/api/v1/workforce", workforceRoutes);
