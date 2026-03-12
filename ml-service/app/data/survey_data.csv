@@ -1,0 +1,1601 @@
+respondent_id,department,question,score
+EMP-0001,Sales,Overall job satisfaction,3.4
+EMP-0001,Sales,Work-life balance,2.9
+EMP-0001,Sales,Management effectiveness,3.0
+EMP-0001,Sales,Career growth opportunities,3.6
+EMP-0001,Sales,Team collaboration,2.9
+EMP-0001,Sales,Compensation fairness,3.4
+EMP-0001,Sales,Work environment,2.9
+EMP-0001,Sales,Communication quality,3.3
+EMP-0002,Operations,Overall job satisfaction,3.0
+EMP-0002,Operations,Work-life balance,3.3
+EMP-0002,Operations,Management effectiveness,3.0
+EMP-0002,Operations,Career growth opportunities,3.4
+EMP-0002,Operations,Team collaboration,3.0
+EMP-0002,Operations,Compensation fairness,3.0
+EMP-0002,Operations,Work environment,2.6
+EMP-0002,Operations,Communication quality,3.3
+EMP-0003,Finance,Overall job satisfaction,3.2
+EMP-0003,Finance,Work-life balance,2.8
+EMP-0003,Finance,Management effectiveness,3.5
+EMP-0003,Finance,Career growth opportunities,3.0
+EMP-0003,Finance,Team collaboration,3.7
+EMP-0003,Finance,Compensation fairness,2.8
+EMP-0003,Finance,Work environment,3.1
+EMP-0003,Finance,Communication quality,2.7
+EMP-0004,HR,Overall job satisfaction,3.8
+EMP-0004,HR,Work-life balance,3.9
+EMP-0004,HR,Management effectiveness,4.0
+EMP-0004,HR,Career growth opportunities,4.9
+EMP-0004,HR,Team collaboration,4.3
+EMP-0004,HR,Compensation fairness,3.6
+EMP-0004,HR,Work environment,5.0
+EMP-0004,HR,Communication quality,3.7
+EMP-0005,Finance,Overall job satisfaction,3.2
+EMP-0005,Finance,Work-life balance,3.4
+EMP-0005,Finance,Management effectiveness,2.0
+EMP-0005,Finance,Career growth opportunities,2.6
+EMP-0005,Finance,Team collaboration,3.1
+EMP-0005,Finance,Compensation fairness,3.1
+EMP-0005,Finance,Work environment,2.4
+EMP-0005,Finance,Communication quality,3.1
+EMP-0006,Finance,Overall job satisfaction,3.6
+EMP-0006,Finance,Work-life balance,4.1
+EMP-0006,Finance,Management effectiveness,4.6
+EMP-0006,Finance,Career growth opportunities,3.9
+EMP-0006,Finance,Team collaboration,3.4
+EMP-0006,Finance,Compensation fairness,4.0
+EMP-0006,Finance,Work environment,4.0
+EMP-0006,Finance,Communication quality,3.8
+EMP-0007,Operations,Overall job satisfaction,3.0
+EMP-0007,Operations,Work-life balance,4.1
+EMP-0007,Operations,Management effectiveness,3.7
+EMP-0007,Operations,Career growth opportunities,2.5
+EMP-0007,Operations,Team collaboration,3.3
+EMP-0007,Operations,Compensation fairness,2.7
+EMP-0007,Operations,Work environment,2.4
+EMP-0007,Operations,Communication quality,2.8
+EMP-0008,Engineering,Overall job satisfaction,1.9
+EMP-0008,Engineering,Work-life balance,1.7
+EMP-0008,Engineering,Management effectiveness,1.4
+EMP-0008,Engineering,Career growth opportunities,2.0
+EMP-0008,Engineering,Team collaboration,1.6
+EMP-0008,Engineering,Compensation fairness,1.0
+EMP-0008,Engineering,Work environment,1.0
+EMP-0008,Engineering,Communication quality,2.1
+EMP-0009,Operations,Overall job satisfaction,3.1
+EMP-0009,Operations,Work-life balance,3.3
+EMP-0009,Operations,Management effectiveness,4.0
+EMP-0009,Operations,Career growth opportunities,4.1
+EMP-0009,Operations,Team collaboration,4.0
+EMP-0009,Operations,Compensation fairness,4.2
+EMP-0009,Operations,Work environment,3.7
+EMP-0009,Operations,Communication quality,4.4
+EMP-0010,HR,Overall job satisfaction,5.0
+EMP-0010,HR,Work-life balance,4.5
+EMP-0010,HR,Management effectiveness,4.8
+EMP-0010,HR,Career growth opportunities,4.2
+EMP-0010,HR,Team collaboration,3.3
+EMP-0010,HR,Compensation fairness,4.4
+EMP-0010,HR,Work environment,4.8
+EMP-0010,HR,Communication quality,5.0
+EMP-0011,HR,Overall job satisfaction,3.9
+EMP-0011,HR,Work-life balance,2.4
+EMP-0011,HR,Management effectiveness,3.6
+EMP-0011,HR,Career growth opportunities,2.7
+EMP-0011,HR,Team collaboration,2.4
+EMP-0011,HR,Compensation fairness,3.9
+EMP-0011,HR,Work environment,3.5
+EMP-0011,HR,Communication quality,3.5
+EMP-0012,HR,Overall job satisfaction,4.3
+EMP-0012,HR,Work-life balance,3.6
+EMP-0012,HR,Management effectiveness,4.5
+EMP-0012,HR,Career growth opportunities,4.5
+EMP-0012,HR,Team collaboration,3.7
+EMP-0012,HR,Compensation fairness,4.0
+EMP-0012,HR,Work environment,4.0
+EMP-0012,HR,Communication quality,3.2
+EMP-0013,Operations,Overall job satisfaction,4.5
+EMP-0013,Operations,Work-life balance,4.1
+EMP-0013,Operations,Management effectiveness,3.9
+EMP-0013,Operations,Career growth opportunities,4.7
+EMP-0013,Operations,Team collaboration,4.0
+EMP-0013,Operations,Compensation fairness,4.5
+EMP-0013,Operations,Work environment,4.1
+EMP-0013,Operations,Communication quality,3.6
+EMP-0014,Marketing,Overall job satisfaction,3.8
+EMP-0014,Marketing,Work-life balance,5.0
+EMP-0014,Marketing,Management effectiveness,5.0
+EMP-0014,Marketing,Career growth opportunities,4.3
+EMP-0014,Marketing,Team collaboration,5.0
+EMP-0014,Marketing,Compensation fairness,4.7
+EMP-0014,Marketing,Work environment,4.2
+EMP-0014,Marketing,Communication quality,4.6
+EMP-0015,Sales,Overall job satisfaction,5.0
+EMP-0015,Sales,Work-life balance,3.8
+EMP-0015,Sales,Management effectiveness,3.9
+EMP-0015,Sales,Career growth opportunities,3.9
+EMP-0015,Sales,Team collaboration,5.0
+EMP-0015,Sales,Compensation fairness,3.8
+EMP-0015,Sales,Work environment,4.8
+EMP-0015,Sales,Communication quality,4.0
+EMP-0016,Marketing,Overall job satisfaction,3.5
+EMP-0016,Marketing,Work-life balance,4.1
+EMP-0016,Marketing,Management effectiveness,3.4
+EMP-0016,Marketing,Career growth opportunities,3.7
+EMP-0016,Marketing,Team collaboration,3.9
+EMP-0016,Marketing,Compensation fairness,3.2
+EMP-0016,Marketing,Work environment,3.2
+EMP-0016,Marketing,Communication quality,3.3
+EMP-0017,Marketing,Overall job satisfaction,3.0
+EMP-0017,Marketing,Work-life balance,3.6
+EMP-0017,Marketing,Management effectiveness,4.1
+EMP-0017,Marketing,Career growth opportunities,3.6
+EMP-0017,Marketing,Team collaboration,3.7
+EMP-0017,Marketing,Compensation fairness,3.1
+EMP-0017,Marketing,Work environment,3.7
+EMP-0017,Marketing,Communication quality,3.7
+EMP-0018,HR,Overall job satisfaction,2.5
+EMP-0018,HR,Work-life balance,3.1
+EMP-0018,HR,Management effectiveness,3.3
+EMP-0018,HR,Career growth opportunities,3.4
+EMP-0018,HR,Team collaboration,3.1
+EMP-0018,HR,Compensation fairness,3.3
+EMP-0018,HR,Work environment,2.6
+EMP-0018,HR,Communication quality,2.7
+EMP-0019,Engineering,Overall job satisfaction,3.7
+EMP-0019,Engineering,Work-life balance,3.7
+EMP-0019,Engineering,Management effectiveness,4.0
+EMP-0019,Engineering,Career growth opportunities,3.8
+EMP-0019,Engineering,Team collaboration,4.0
+EMP-0019,Engineering,Compensation fairness,3.9
+EMP-0019,Engineering,Work environment,3.0
+EMP-0019,Engineering,Communication quality,3.8
+EMP-0020,Marketing,Overall job satisfaction,3.0
+EMP-0020,Marketing,Work-life balance,3.1
+EMP-0020,Marketing,Management effectiveness,2.7
+EMP-0020,Marketing,Career growth opportunities,2.1
+EMP-0020,Marketing,Team collaboration,3.6
+EMP-0020,Marketing,Compensation fairness,3.1
+EMP-0020,Marketing,Work environment,3.0
+EMP-0020,Marketing,Communication quality,2.9
+EMP-0021,Engineering,Overall job satisfaction,4.0
+EMP-0021,Engineering,Work-life balance,3.8
+EMP-0021,Engineering,Management effectiveness,3.5
+EMP-0021,Engineering,Career growth opportunities,4.7
+EMP-0021,Engineering,Team collaboration,3.3
+EMP-0021,Engineering,Compensation fairness,4.3
+EMP-0021,Engineering,Work environment,2.9
+EMP-0021,Engineering,Communication quality,4.0
+EMP-0022,Sales,Overall job satisfaction,5.0
+EMP-0022,Sales,Work-life balance,4.0
+EMP-0022,Sales,Management effectiveness,4.8
+EMP-0022,Sales,Career growth opportunities,4.9
+EMP-0022,Sales,Team collaboration,4.7
+EMP-0022,Sales,Compensation fairness,4.9
+EMP-0022,Sales,Work environment,5.0
+EMP-0022,Sales,Communication quality,4.6
+EMP-0023,HR,Overall job satisfaction,5.0
+EMP-0023,HR,Work-life balance,5.0
+EMP-0023,HR,Management effectiveness,5.0
+EMP-0023,HR,Career growth opportunities,5.0
+EMP-0023,HR,Team collaboration,5.0
+EMP-0023,HR,Compensation fairness,5.0
+EMP-0023,HR,Work environment,5.0
+EMP-0023,HR,Communication quality,5.0
+EMP-0024,Sales,Overall job satisfaction,4.5
+EMP-0024,Sales,Work-life balance,4.1
+EMP-0024,Sales,Management effectiveness,5.0
+EMP-0024,Sales,Career growth opportunities,4.6
+EMP-0024,Sales,Team collaboration,4.2
+EMP-0024,Sales,Compensation fairness,4.9
+EMP-0024,Sales,Work environment,4.5
+EMP-0024,Sales,Communication quality,4.5
+EMP-0025,Marketing,Overall job satisfaction,4.3
+EMP-0025,Marketing,Work-life balance,4.4
+EMP-0025,Marketing,Management effectiveness,4.2
+EMP-0025,Marketing,Career growth opportunities,3.8
+EMP-0025,Marketing,Team collaboration,4.6
+EMP-0025,Marketing,Compensation fairness,4.6
+EMP-0025,Marketing,Work environment,4.7
+EMP-0025,Marketing,Communication quality,4.8
+EMP-0026,Sales,Overall job satisfaction,2.6
+EMP-0026,Sales,Work-life balance,3.2
+EMP-0026,Sales,Management effectiveness,3.1
+EMP-0026,Sales,Career growth opportunities,2.9
+EMP-0026,Sales,Team collaboration,3.4
+EMP-0026,Sales,Compensation fairness,3.1
+EMP-0026,Sales,Work environment,4.4
+EMP-0026,Sales,Communication quality,3.9
+EMP-0027,Engineering,Overall job satisfaction,4.1
+EMP-0027,Engineering,Work-life balance,3.4
+EMP-0027,Engineering,Management effectiveness,3.7
+EMP-0027,Engineering,Career growth opportunities,4.7
+EMP-0027,Engineering,Team collaboration,4.0
+EMP-0027,Engineering,Compensation fairness,3.7
+EMP-0027,Engineering,Work environment,4.7
+EMP-0027,Engineering,Communication quality,4.8
+EMP-0028,HR,Overall job satisfaction,2.5
+EMP-0028,HR,Work-life balance,3.1
+EMP-0028,HR,Management effectiveness,2.0
+EMP-0028,HR,Career growth opportunities,2.6
+EMP-0028,HR,Team collaboration,1.6
+EMP-0028,HR,Compensation fairness,1.9
+EMP-0028,HR,Work environment,3.0
+EMP-0028,HR,Communication quality,2.4
+EMP-0029,Operations,Overall job satisfaction,2.9
+EMP-0029,Operations,Work-life balance,2.5
+EMP-0029,Operations,Management effectiveness,2.5
+EMP-0029,Operations,Career growth opportunities,3.2
+EMP-0029,Operations,Team collaboration,3.0
+EMP-0029,Operations,Compensation fairness,2.5
+EMP-0029,Operations,Work environment,3.0
+EMP-0029,Operations,Communication quality,1.7
+EMP-0030,Finance,Overall job satisfaction,1.2
+EMP-0030,Finance,Work-life balance,1.3
+EMP-0030,Finance,Management effectiveness,1.8
+EMP-0030,Finance,Career growth opportunities,1.2
+EMP-0030,Finance,Team collaboration,1.9
+EMP-0030,Finance,Compensation fairness,1.0
+EMP-0030,Finance,Work environment,1.8
+EMP-0030,Finance,Communication quality,2.0
+EMP-0031,Operations,Overall job satisfaction,3.3
+EMP-0031,Operations,Work-life balance,3.4
+EMP-0031,Operations,Management effectiveness,4.0
+EMP-0031,Operations,Career growth opportunities,4.4
+EMP-0031,Operations,Team collaboration,3.1
+EMP-0031,Operations,Compensation fairness,3.4
+EMP-0031,Operations,Work environment,2.9
+EMP-0031,Operations,Communication quality,3.5
+EMP-0032,Operations,Overall job satisfaction,2.6
+EMP-0032,Operations,Work-life balance,3.9
+EMP-0032,Operations,Management effectiveness,2.7
+EMP-0032,Operations,Career growth opportunities,4.0
+EMP-0032,Operations,Team collaboration,3.8
+EMP-0032,Operations,Compensation fairness,3.9
+EMP-0032,Operations,Work environment,4.2
+EMP-0032,Operations,Communication quality,3.3
+EMP-0033,Finance,Overall job satisfaction,4.7
+EMP-0033,Finance,Work-life balance,5.0
+EMP-0033,Finance,Management effectiveness,5.0
+EMP-0033,Finance,Career growth opportunities,3.1
+EMP-0033,Finance,Team collaboration,4.4
+EMP-0033,Finance,Compensation fairness,3.5
+EMP-0033,Finance,Work environment,4.8
+EMP-0033,Finance,Communication quality,4.3
+EMP-0034,Sales,Overall job satisfaction,3.0
+EMP-0034,Sales,Work-life balance,2.2
+EMP-0034,Sales,Management effectiveness,2.9
+EMP-0034,Sales,Career growth opportunities,3.0
+EMP-0034,Sales,Team collaboration,3.7
+EMP-0034,Sales,Compensation fairness,2.6
+EMP-0034,Sales,Work environment,3.0
+EMP-0034,Sales,Communication quality,3.4
+EMP-0035,Engineering,Overall job satisfaction,4.4
+EMP-0035,Engineering,Work-life balance,4.5
+EMP-0035,Engineering,Management effectiveness,5.0
+EMP-0035,Engineering,Career growth opportunities,5.0
+EMP-0035,Engineering,Team collaboration,4.1
+EMP-0035,Engineering,Compensation fairness,3.6
+EMP-0035,Engineering,Work environment,4.6
+EMP-0035,Engineering,Communication quality,4.9
+EMP-0036,Sales,Overall job satisfaction,4.4
+EMP-0036,Sales,Work-life balance,3.9
+EMP-0036,Sales,Management effectiveness,4.1
+EMP-0036,Sales,Career growth opportunities,4.4
+EMP-0036,Sales,Team collaboration,4.1
+EMP-0036,Sales,Compensation fairness,4.2
+EMP-0036,Sales,Work environment,3.6
+EMP-0036,Sales,Communication quality,4.5
+EMP-0037,Marketing,Overall job satisfaction,4.6
+EMP-0037,Marketing,Work-life balance,4.0
+EMP-0037,Marketing,Management effectiveness,4.5
+EMP-0037,Marketing,Career growth opportunities,2.8
+EMP-0037,Marketing,Team collaboration,4.0
+EMP-0037,Marketing,Compensation fairness,3.9
+EMP-0037,Marketing,Work environment,3.0
+EMP-0037,Marketing,Communication quality,3.1
+EMP-0038,Finance,Overall job satisfaction,4.2
+EMP-0038,Finance,Work-life balance,4.3
+EMP-0038,Finance,Management effectiveness,4.7
+EMP-0038,Finance,Career growth opportunities,4.1
+EMP-0038,Finance,Team collaboration,3.1
+EMP-0038,Finance,Compensation fairness,3.4
+EMP-0038,Finance,Work environment,3.8
+EMP-0038,Finance,Communication quality,4.4
+EMP-0039,HR,Overall job satisfaction,5.0
+EMP-0039,HR,Work-life balance,3.8
+EMP-0039,HR,Management effectiveness,3.7
+EMP-0039,HR,Career growth opportunities,4.8
+EMP-0039,HR,Team collaboration,4.2
+EMP-0039,HR,Compensation fairness,3.4
+EMP-0039,HR,Work environment,4.0
+EMP-0039,HR,Communication quality,4.2
+EMP-0040,HR,Overall job satisfaction,2.9
+EMP-0040,HR,Work-life balance,2.9
+EMP-0040,HR,Management effectiveness,3.3
+EMP-0040,HR,Career growth opportunities,2.3
+EMP-0040,HR,Team collaboration,1.9
+EMP-0040,HR,Compensation fairness,3.1
+EMP-0040,HR,Work environment,3.5
+EMP-0040,HR,Communication quality,3.9
+EMP-0041,Engineering,Overall job satisfaction,2.9
+EMP-0041,Engineering,Work-life balance,2.5
+EMP-0041,Engineering,Management effectiveness,2.0
+EMP-0041,Engineering,Career growth opportunities,2.4
+EMP-0041,Engineering,Team collaboration,2.8
+EMP-0041,Engineering,Compensation fairness,3.1
+EMP-0041,Engineering,Work environment,3.2
+EMP-0041,Engineering,Communication quality,3.3
+EMP-0042,Sales,Overall job satisfaction,2.6
+EMP-0042,Sales,Work-life balance,2.0
+EMP-0042,Sales,Management effectiveness,2.4
+EMP-0042,Sales,Career growth opportunities,2.7
+EMP-0042,Sales,Team collaboration,2.7
+EMP-0042,Sales,Compensation fairness,3.3
+EMP-0042,Sales,Work environment,2.1
+EMP-0042,Sales,Communication quality,2.2
+EMP-0043,HR,Overall job satisfaction,4.1
+EMP-0043,HR,Work-life balance,3.6
+EMP-0043,HR,Management effectiveness,3.2
+EMP-0043,HR,Career growth opportunities,3.5
+EMP-0043,HR,Team collaboration,3.0
+EMP-0043,HR,Compensation fairness,3.9
+EMP-0043,HR,Work environment,3.9
+EMP-0043,HR,Communication quality,3.4
+EMP-0044,Engineering,Overall job satisfaction,3.1
+EMP-0044,Engineering,Work-life balance,2.9
+EMP-0044,Engineering,Management effectiveness,3.8
+EMP-0044,Engineering,Career growth opportunities,3.5
+EMP-0044,Engineering,Team collaboration,4.0
+EMP-0044,Engineering,Compensation fairness,3.9
+EMP-0044,Engineering,Work environment,4.5
+EMP-0044,Engineering,Communication quality,3.9
+EMP-0045,Marketing,Overall job satisfaction,3.1
+EMP-0045,Marketing,Work-life balance,2.6
+EMP-0045,Marketing,Management effectiveness,3.2
+EMP-0045,Marketing,Career growth opportunities,4.1
+EMP-0045,Marketing,Team collaboration,3.0
+EMP-0045,Marketing,Compensation fairness,3.0
+EMP-0045,Marketing,Work environment,2.5
+EMP-0045,Marketing,Communication quality,3.5
+EMP-0046,Engineering,Overall job satisfaction,4.1
+EMP-0046,Engineering,Work-life balance,4.2
+EMP-0046,Engineering,Management effectiveness,3.1
+EMP-0046,Engineering,Career growth opportunities,2.6
+EMP-0046,Engineering,Team collaboration,2.9
+EMP-0046,Engineering,Compensation fairness,3.2
+EMP-0046,Engineering,Work environment,2.2
+EMP-0046,Engineering,Communication quality,3.2
+EMP-0047,Engineering,Overall job satisfaction,4.0
+EMP-0047,Engineering,Work-life balance,3.4
+EMP-0047,Engineering,Management effectiveness,4.2
+EMP-0047,Engineering,Career growth opportunities,3.9
+EMP-0047,Engineering,Team collaboration,2.8
+EMP-0047,Engineering,Compensation fairness,3.8
+EMP-0047,Engineering,Work environment,3.9
+EMP-0047,Engineering,Communication quality,4.4
+EMP-0048,Operations,Overall job satisfaction,3.7
+EMP-0048,Operations,Work-life balance,3.9
+EMP-0048,Operations,Management effectiveness,3.3
+EMP-0048,Operations,Career growth opportunities,3.3
+EMP-0048,Operations,Team collaboration,3.6
+EMP-0048,Operations,Compensation fairness,2.4
+EMP-0048,Operations,Work environment,2.8
+EMP-0048,Operations,Communication quality,3.0
+EMP-0049,Sales,Overall job satisfaction,4.3
+EMP-0049,Sales,Work-life balance,4.4
+EMP-0049,Sales,Management effectiveness,5.0
+EMP-0049,Sales,Career growth opportunities,4.0
+EMP-0049,Sales,Team collaboration,4.0
+EMP-0049,Sales,Compensation fairness,4.7
+EMP-0049,Sales,Work environment,4.1
+EMP-0049,Sales,Communication quality,4.0
+EMP-0050,Engineering,Overall job satisfaction,4.0
+EMP-0050,Engineering,Work-life balance,4.1
+EMP-0050,Engineering,Management effectiveness,3.9
+EMP-0050,Engineering,Career growth opportunities,4.4
+EMP-0050,Engineering,Team collaboration,4.3
+EMP-0050,Engineering,Compensation fairness,4.3
+EMP-0050,Engineering,Work environment,3.8
+EMP-0050,Engineering,Communication quality,4.3
+EMP-0051,HR,Overall job satisfaction,4.0
+EMP-0051,HR,Work-life balance,3.1
+EMP-0051,HR,Management effectiveness,3.9
+EMP-0051,HR,Career growth opportunities,2.8
+EMP-0051,HR,Team collaboration,3.5
+EMP-0051,HR,Compensation fairness,3.8
+EMP-0051,HR,Work environment,3.8
+EMP-0051,HR,Communication quality,4.4
+EMP-0052,HR,Overall job satisfaction,5.0
+EMP-0052,HR,Work-life balance,5.0
+EMP-0052,HR,Management effectiveness,5.0
+EMP-0052,HR,Career growth opportunities,5.0
+EMP-0052,HR,Team collaboration,5.0
+EMP-0052,HR,Compensation fairness,5.0
+EMP-0052,HR,Work environment,5.0
+EMP-0052,HR,Communication quality,4.5
+EMP-0053,Sales,Overall job satisfaction,4.6
+EMP-0053,Sales,Work-life balance,4.1
+EMP-0053,Sales,Management effectiveness,4.4
+EMP-0053,Sales,Career growth opportunities,4.6
+EMP-0053,Sales,Team collaboration,4.1
+EMP-0053,Sales,Compensation fairness,4.5
+EMP-0053,Sales,Work environment,4.1
+EMP-0053,Sales,Communication quality,4.0
+EMP-0054,Operations,Overall job satisfaction,3.1
+EMP-0054,Operations,Work-life balance,3.1
+EMP-0054,Operations,Management effectiveness,2.8
+EMP-0054,Operations,Career growth opportunities,2.8
+EMP-0054,Operations,Team collaboration,3.6
+EMP-0054,Operations,Compensation fairness,2.6
+EMP-0054,Operations,Work environment,2.9
+EMP-0054,Operations,Communication quality,2.8
+EMP-0055,Marketing,Overall job satisfaction,3.3
+EMP-0055,Marketing,Work-life balance,2.6
+EMP-0055,Marketing,Management effectiveness,2.5
+EMP-0055,Marketing,Career growth opportunities,3.0
+EMP-0055,Marketing,Team collaboration,2.4
+EMP-0055,Marketing,Compensation fairness,3.8
+EMP-0055,Marketing,Work environment,3.9
+EMP-0055,Marketing,Communication quality,2.8
+EMP-0056,Sales,Overall job satisfaction,2.8
+EMP-0056,Sales,Work-life balance,2.8
+EMP-0056,Sales,Management effectiveness,3.1
+EMP-0056,Sales,Career growth opportunities,2.9
+EMP-0056,Sales,Team collaboration,1.6
+EMP-0056,Sales,Compensation fairness,2.9
+EMP-0056,Sales,Work environment,2.9
+EMP-0056,Sales,Communication quality,1.5
+EMP-0057,Sales,Overall job satisfaction,3.8
+EMP-0057,Sales,Work-life balance,3.7
+EMP-0057,Sales,Management effectiveness,3.2
+EMP-0057,Sales,Career growth opportunities,3.8
+EMP-0057,Sales,Team collaboration,3.4
+EMP-0057,Sales,Compensation fairness,3.8
+EMP-0057,Sales,Work environment,3.9
+EMP-0057,Sales,Communication quality,4.6
+EMP-0058,Operations,Overall job satisfaction,3.6
+EMP-0058,Operations,Work-life balance,4.0
+EMP-0058,Operations,Management effectiveness,3.4
+EMP-0058,Operations,Career growth opportunities,3.5
+EMP-0058,Operations,Team collaboration,3.0
+EMP-0058,Operations,Compensation fairness,4.6
+EMP-0058,Operations,Work environment,4.3
+EMP-0058,Operations,Communication quality,4.5
+EMP-0059,Sales,Overall job satisfaction,3.6
+EMP-0059,Sales,Work-life balance,2.9
+EMP-0059,Sales,Management effectiveness,3.3
+EMP-0059,Sales,Career growth opportunities,2.2
+EMP-0059,Sales,Team collaboration,2.2
+EMP-0059,Sales,Compensation fairness,3.0
+EMP-0059,Sales,Work environment,2.3
+EMP-0059,Sales,Communication quality,3.5
+EMP-0060,Finance,Overall job satisfaction,3.6
+EMP-0060,Finance,Work-life balance,3.7
+EMP-0060,Finance,Management effectiveness,3.4
+EMP-0060,Finance,Career growth opportunities,3.1
+EMP-0060,Finance,Team collaboration,3.2
+EMP-0060,Finance,Compensation fairness,3.0
+EMP-0060,Finance,Work environment,3.7
+EMP-0060,Finance,Communication quality,3.7
+EMP-0061,Sales,Overall job satisfaction,2.8
+EMP-0061,Sales,Work-life balance,3.4
+EMP-0061,Sales,Management effectiveness,2.4
+EMP-0061,Sales,Career growth opportunities,3.6
+EMP-0061,Sales,Team collaboration,3.0
+EMP-0061,Sales,Compensation fairness,3.6
+EMP-0061,Sales,Work environment,3.8
+EMP-0061,Sales,Communication quality,3.5
+EMP-0062,Finance,Overall job satisfaction,3.3
+EMP-0062,Finance,Work-life balance,2.8
+EMP-0062,Finance,Management effectiveness,3.0
+EMP-0062,Finance,Career growth opportunities,2.5
+EMP-0062,Finance,Team collaboration,3.3
+EMP-0062,Finance,Compensation fairness,2.4
+EMP-0062,Finance,Work environment,2.5
+EMP-0062,Finance,Communication quality,2.7
+EMP-0063,Engineering,Overall job satisfaction,3.9
+EMP-0063,Engineering,Work-life balance,3.8
+EMP-0063,Engineering,Management effectiveness,3.1
+EMP-0063,Engineering,Career growth opportunities,4.0
+EMP-0063,Engineering,Team collaboration,4.1
+EMP-0063,Engineering,Compensation fairness,3.9
+EMP-0063,Engineering,Work environment,3.7
+EMP-0063,Engineering,Communication quality,4.1
+EMP-0064,Sales,Overall job satisfaction,4.4
+EMP-0064,Sales,Work-life balance,3.2
+EMP-0064,Sales,Management effectiveness,3.4
+EMP-0064,Sales,Career growth opportunities,3.7
+EMP-0064,Sales,Team collaboration,3.9
+EMP-0064,Sales,Compensation fairness,4.3
+EMP-0064,Sales,Work environment,3.6
+EMP-0064,Sales,Communication quality,4.2
+EMP-0065,Finance,Overall job satisfaction,4.4
+EMP-0065,Finance,Work-life balance,5.0
+EMP-0065,Finance,Management effectiveness,5.0
+EMP-0065,Finance,Career growth opportunities,5.0
+EMP-0065,Finance,Team collaboration,4.1
+EMP-0065,Finance,Compensation fairness,5.0
+EMP-0065,Finance,Work environment,4.5
+EMP-0065,Finance,Communication quality,4.7
+EMP-0066,Sales,Overall job satisfaction,3.3
+EMP-0066,Sales,Work-life balance,3.2
+EMP-0066,Sales,Management effectiveness,3.3
+EMP-0066,Sales,Career growth opportunities,3.6
+EMP-0066,Sales,Team collaboration,4.4
+EMP-0066,Sales,Compensation fairness,4.0
+EMP-0066,Sales,Work environment,2.8
+EMP-0066,Sales,Communication quality,2.9
+EMP-0067,Sales,Overall job satisfaction,5.0
+EMP-0067,Sales,Work-life balance,4.8
+EMP-0067,Sales,Management effectiveness,4.4
+EMP-0067,Sales,Career growth opportunities,4.0
+EMP-0067,Sales,Team collaboration,4.4
+EMP-0067,Sales,Compensation fairness,4.6
+EMP-0067,Sales,Work environment,3.7
+EMP-0067,Sales,Communication quality,4.3
+EMP-0068,Operations,Overall job satisfaction,3.9
+EMP-0068,Operations,Work-life balance,2.8
+EMP-0068,Operations,Management effectiveness,3.8
+EMP-0068,Operations,Career growth opportunities,3.1
+EMP-0068,Operations,Team collaboration,2.9
+EMP-0068,Operations,Compensation fairness,2.8
+EMP-0068,Operations,Work environment,1.9
+EMP-0068,Operations,Communication quality,2.6
+EMP-0069,HR,Overall job satisfaction,5.0
+EMP-0069,HR,Work-life balance,4.7
+EMP-0069,HR,Management effectiveness,5.0
+EMP-0069,HR,Career growth opportunities,4.8
+EMP-0069,HR,Team collaboration,5.0
+EMP-0069,HR,Compensation fairness,4.9
+EMP-0069,HR,Work environment,5.0
+EMP-0069,HR,Communication quality,4.9
+EMP-0070,HR,Overall job satisfaction,2.3
+EMP-0070,HR,Work-life balance,3.1
+EMP-0070,HR,Management effectiveness,2.6
+EMP-0070,HR,Career growth opportunities,3.1
+EMP-0070,HR,Team collaboration,2.6
+EMP-0070,HR,Compensation fairness,2.9
+EMP-0070,HR,Work environment,2.5
+EMP-0070,HR,Communication quality,2.5
+EMP-0071,Operations,Overall job satisfaction,3.8
+EMP-0071,Operations,Work-life balance,2.8
+EMP-0071,Operations,Management effectiveness,2.2
+EMP-0071,Operations,Career growth opportunities,2.4
+EMP-0071,Operations,Team collaboration,2.9
+EMP-0071,Operations,Compensation fairness,3.2
+EMP-0071,Operations,Work environment,3.0
+EMP-0071,Operations,Communication quality,2.9
+EMP-0072,Engineering,Overall job satisfaction,3.4
+EMP-0072,Engineering,Work-life balance,4.1
+EMP-0072,Engineering,Management effectiveness,3.0
+EMP-0072,Engineering,Career growth opportunities,2.9
+EMP-0072,Engineering,Team collaboration,2.7
+EMP-0072,Engineering,Compensation fairness,2.9
+EMP-0072,Engineering,Work environment,3.2
+EMP-0072,Engineering,Communication quality,3.6
+EMP-0073,Sales,Overall job satisfaction,4.2
+EMP-0073,Sales,Work-life balance,3.6
+EMP-0073,Sales,Management effectiveness,3.4
+EMP-0073,Sales,Career growth opportunities,3.9
+EMP-0073,Sales,Team collaboration,3.8
+EMP-0073,Sales,Compensation fairness,4.3
+EMP-0073,Sales,Work environment,2.5
+EMP-0073,Sales,Communication quality,3.3
+EMP-0074,Finance,Overall job satisfaction,4.3
+EMP-0074,Finance,Work-life balance,4.2
+EMP-0074,Finance,Management effectiveness,4.0
+EMP-0074,Finance,Career growth opportunities,3.6
+EMP-0074,Finance,Team collaboration,4.1
+EMP-0074,Finance,Compensation fairness,3.6
+EMP-0074,Finance,Work environment,4.0
+EMP-0074,Finance,Communication quality,4.8
+EMP-0075,Engineering,Overall job satisfaction,5.0
+EMP-0075,Engineering,Work-life balance,4.8
+EMP-0075,Engineering,Management effectiveness,5.0
+EMP-0075,Engineering,Career growth opportunities,5.0
+EMP-0075,Engineering,Team collaboration,4.6
+EMP-0075,Engineering,Compensation fairness,4.5
+EMP-0075,Engineering,Work environment,5.0
+EMP-0075,Engineering,Communication quality,5.0
+EMP-0076,Sales,Overall job satisfaction,5.0
+EMP-0076,Sales,Work-life balance,5.0
+EMP-0076,Sales,Management effectiveness,4.3
+EMP-0076,Sales,Career growth opportunities,4.6
+EMP-0076,Sales,Team collaboration,4.3
+EMP-0076,Sales,Compensation fairness,4.7
+EMP-0076,Sales,Work environment,4.6
+EMP-0076,Sales,Communication quality,4.0
+EMP-0077,HR,Overall job satisfaction,2.9
+EMP-0077,HR,Work-life balance,3.4
+EMP-0077,HR,Management effectiveness,2.4
+EMP-0077,HR,Career growth opportunities,3.0
+EMP-0077,HR,Team collaboration,3.6
+EMP-0077,HR,Compensation fairness,2.5
+EMP-0077,HR,Work environment,3.2
+EMP-0077,HR,Communication quality,2.8
+EMP-0078,Engineering,Overall job satisfaction,3.2
+EMP-0078,Engineering,Work-life balance,3.0
+EMP-0078,Engineering,Management effectiveness,3.0
+EMP-0078,Engineering,Career growth opportunities,2.9
+EMP-0078,Engineering,Team collaboration,3.1
+EMP-0078,Engineering,Compensation fairness,2.9
+EMP-0078,Engineering,Work environment,2.6
+EMP-0078,Engineering,Communication quality,2.0
+EMP-0079,Finance,Overall job satisfaction,2.5
+EMP-0079,Finance,Work-life balance,3.6
+EMP-0079,Finance,Management effectiveness,3.0
+EMP-0079,Finance,Career growth opportunities,2.5
+EMP-0079,Finance,Team collaboration,2.3
+EMP-0079,Finance,Compensation fairness,2.7
+EMP-0079,Finance,Work environment,2.8
+EMP-0079,Finance,Communication quality,3.4
+EMP-0080,Marketing,Overall job satisfaction,2.4
+EMP-0080,Marketing,Work-life balance,3.7
+EMP-0080,Marketing,Management effectiveness,4.3
+EMP-0080,Marketing,Career growth opportunities,3.6
+EMP-0080,Marketing,Team collaboration,3.6
+EMP-0080,Marketing,Compensation fairness,4.4
+EMP-0080,Marketing,Work environment,3.7
+EMP-0080,Marketing,Communication quality,3.5
+EMP-0081,Engineering,Overall job satisfaction,4.5
+EMP-0081,Engineering,Work-life balance,5.0
+EMP-0081,Engineering,Management effectiveness,4.6
+EMP-0081,Engineering,Career growth opportunities,4.9
+EMP-0081,Engineering,Team collaboration,5.0
+EMP-0081,Engineering,Compensation fairness,5.0
+EMP-0081,Engineering,Work environment,5.0
+EMP-0081,Engineering,Communication quality,4.8
+EMP-0082,Engineering,Overall job satisfaction,3.8
+EMP-0082,Engineering,Work-life balance,4.0
+EMP-0082,Engineering,Management effectiveness,2.9
+EMP-0082,Engineering,Career growth opportunities,3.8
+EMP-0082,Engineering,Team collaboration,4.0
+EMP-0082,Engineering,Compensation fairness,3.4
+EMP-0082,Engineering,Work environment,4.8
+EMP-0082,Engineering,Communication quality,3.9
+EMP-0083,Marketing,Overall job satisfaction,2.7
+EMP-0083,Marketing,Work-life balance,4.3
+EMP-0083,Marketing,Management effectiveness,2.8
+EMP-0083,Marketing,Career growth opportunities,3.6
+EMP-0083,Marketing,Team collaboration,2.3
+EMP-0083,Marketing,Compensation fairness,4.4
+EMP-0083,Marketing,Work environment,4.1
+EMP-0083,Marketing,Communication quality,2.6
+EMP-0084,Marketing,Overall job satisfaction,2.8
+EMP-0084,Marketing,Work-life balance,3.8
+EMP-0084,Marketing,Management effectiveness,3.7
+EMP-0084,Marketing,Career growth opportunities,3.4
+EMP-0084,Marketing,Team collaboration,3.5
+EMP-0084,Marketing,Compensation fairness,3.6
+EMP-0084,Marketing,Work environment,3.0
+EMP-0084,Marketing,Communication quality,3.1
+EMP-0085,Sales,Overall job satisfaction,4.3
+EMP-0085,Sales,Work-life balance,4.7
+EMP-0085,Sales,Management effectiveness,5.0
+EMP-0085,Sales,Career growth opportunities,4.1
+EMP-0085,Sales,Team collaboration,5.0
+EMP-0085,Sales,Compensation fairness,4.3
+EMP-0085,Sales,Work environment,4.7
+EMP-0085,Sales,Communication quality,3.9
+EMP-0086,Marketing,Overall job satisfaction,4.7
+EMP-0086,Marketing,Work-life balance,5.0
+EMP-0086,Marketing,Management effectiveness,4.2
+EMP-0086,Marketing,Career growth opportunities,4.4
+EMP-0086,Marketing,Team collaboration,5.0
+EMP-0086,Marketing,Compensation fairness,4.3
+EMP-0086,Marketing,Work environment,4.8
+EMP-0086,Marketing,Communication quality,4.8
+EMP-0087,Engineering,Overall job satisfaction,2.7
+EMP-0087,Engineering,Work-life balance,2.3
+EMP-0087,Engineering,Management effectiveness,2.6
+EMP-0087,Engineering,Career growth opportunities,1.2
+EMP-0087,Engineering,Team collaboration,2.7
+EMP-0087,Engineering,Compensation fairness,3.3
+EMP-0087,Engineering,Work environment,3.0
+EMP-0087,Engineering,Communication quality,2.4
+EMP-0088,Marketing,Overall job satisfaction,2.5
+EMP-0088,Marketing,Work-life balance,2.6
+EMP-0088,Marketing,Management effectiveness,2.4
+EMP-0088,Marketing,Career growth opportunities,1.8
+EMP-0088,Marketing,Team collaboration,3.3
+EMP-0088,Marketing,Compensation fairness,2.3
+EMP-0088,Marketing,Work environment,3.0
+EMP-0088,Marketing,Communication quality,2.5
+EMP-0089,Engineering,Overall job satisfaction,2.6
+EMP-0089,Engineering,Work-life balance,3.0
+EMP-0089,Engineering,Management effectiveness,4.4
+EMP-0089,Engineering,Career growth opportunities,2.7
+EMP-0089,Engineering,Team collaboration,3.3
+EMP-0089,Engineering,Compensation fairness,3.4
+EMP-0089,Engineering,Work environment,3.6
+EMP-0089,Engineering,Communication quality,2.7
+EMP-0090,Operations,Overall job satisfaction,3.9
+EMP-0090,Operations,Work-life balance,3.0
+EMP-0090,Operations,Management effectiveness,3.9
+EMP-0090,Operations,Career growth opportunities,3.8
+EMP-0090,Operations,Team collaboration,3.0
+EMP-0090,Operations,Compensation fairness,3.3
+EMP-0090,Operations,Work environment,3.4
+EMP-0090,Operations,Communication quality,3.8
+EMP-0091,Finance,Overall job satisfaction,2.1
+EMP-0091,Finance,Work-life balance,3.6
+EMP-0091,Finance,Management effectiveness,1.8
+EMP-0091,Finance,Career growth opportunities,3.1
+EMP-0091,Finance,Team collaboration,3.3
+EMP-0091,Finance,Compensation fairness,2.9
+EMP-0091,Finance,Work environment,2.7
+EMP-0091,Finance,Communication quality,2.9
+EMP-0092,Operations,Overall job satisfaction,3.4
+EMP-0092,Operations,Work-life balance,4.1
+EMP-0092,Operations,Management effectiveness,3.7
+EMP-0092,Operations,Career growth opportunities,3.9
+EMP-0092,Operations,Team collaboration,2.8
+EMP-0092,Operations,Compensation fairness,3.6
+EMP-0092,Operations,Work environment,2.6
+EMP-0092,Operations,Communication quality,3.1
+EMP-0093,Engineering,Overall job satisfaction,4.9
+EMP-0093,Engineering,Work-life balance,4.4
+EMP-0093,Engineering,Management effectiveness,4.4
+EMP-0093,Engineering,Career growth opportunities,4.6
+EMP-0093,Engineering,Team collaboration,4.4
+EMP-0093,Engineering,Compensation fairness,4.6
+EMP-0093,Engineering,Work environment,5.0
+EMP-0093,Engineering,Communication quality,4.2
+EMP-0094,Sales,Overall job satisfaction,1.1
+EMP-0094,Sales,Work-life balance,1.6
+EMP-0094,Sales,Management effectiveness,1.1
+EMP-0094,Sales,Career growth opportunities,1.7
+EMP-0094,Sales,Team collaboration,2.3
+EMP-0094,Sales,Compensation fairness,2.2
+EMP-0094,Sales,Work environment,2.1
+EMP-0094,Sales,Communication quality,1.5
+EMP-0095,Marketing,Overall job satisfaction,4.7
+EMP-0095,Marketing,Work-life balance,5.0
+EMP-0095,Marketing,Management effectiveness,3.9
+EMP-0095,Marketing,Career growth opportunities,4.9
+EMP-0095,Marketing,Team collaboration,4.7
+EMP-0095,Marketing,Compensation fairness,5.0
+EMP-0095,Marketing,Work environment,4.1
+EMP-0095,Marketing,Communication quality,5.0
+EMP-0096,Finance,Overall job satisfaction,4.0
+EMP-0096,Finance,Work-life balance,4.0
+EMP-0096,Finance,Management effectiveness,3.9
+EMP-0096,Finance,Career growth opportunities,3.4
+EMP-0096,Finance,Team collaboration,4.1
+EMP-0096,Finance,Compensation fairness,3.9
+EMP-0096,Finance,Work environment,2.7
+EMP-0096,Finance,Communication quality,3.7
+EMP-0097,Finance,Overall job satisfaction,4.6
+EMP-0097,Finance,Work-life balance,4.4
+EMP-0097,Finance,Management effectiveness,3.2
+EMP-0097,Finance,Career growth opportunities,3.0
+EMP-0097,Finance,Team collaboration,3.8
+EMP-0097,Finance,Compensation fairness,4.3
+EMP-0097,Finance,Work environment,4.2
+EMP-0097,Finance,Communication quality,4.0
+EMP-0098,Marketing,Overall job satisfaction,4.3
+EMP-0098,Marketing,Work-life balance,4.3
+EMP-0098,Marketing,Management effectiveness,4.0
+EMP-0098,Marketing,Career growth opportunities,4.7
+EMP-0098,Marketing,Team collaboration,3.4
+EMP-0098,Marketing,Compensation fairness,4.8
+EMP-0098,Marketing,Work environment,4.5
+EMP-0098,Marketing,Communication quality,5.0
+EMP-0099,Engineering,Overall job satisfaction,5.0
+EMP-0099,Engineering,Work-life balance,4.6
+EMP-0099,Engineering,Management effectiveness,4.8
+EMP-0099,Engineering,Career growth opportunities,5.0
+EMP-0099,Engineering,Team collaboration,4.9
+EMP-0099,Engineering,Compensation fairness,5.0
+EMP-0099,Engineering,Work environment,5.0
+EMP-0099,Engineering,Communication quality,5.0
+EMP-0100,HR,Overall job satisfaction,3.6
+EMP-0100,HR,Work-life balance,2.6
+EMP-0100,HR,Management effectiveness,2.8
+EMP-0100,HR,Career growth opportunities,3.0
+EMP-0100,HR,Team collaboration,2.7
+EMP-0100,HR,Compensation fairness,3.4
+EMP-0100,HR,Work environment,2.4
+EMP-0100,HR,Communication quality,2.5
+EMP-0101,Sales,Overall job satisfaction,2.6
+EMP-0101,Sales,Work-life balance,2.9
+EMP-0101,Sales,Management effectiveness,1.8
+EMP-0101,Sales,Career growth opportunities,2.7
+EMP-0101,Sales,Team collaboration,2.4
+EMP-0101,Sales,Compensation fairness,3.1
+EMP-0101,Sales,Work environment,2.9
+EMP-0101,Sales,Communication quality,3.4
+EMP-0102,Operations,Overall job satisfaction,1.3
+EMP-0102,Operations,Work-life balance,1.5
+EMP-0102,Operations,Management effectiveness,1.2
+EMP-0102,Operations,Career growth opportunities,2.4
+EMP-0102,Operations,Team collaboration,1.9
+EMP-0102,Operations,Compensation fairness,3.1
+EMP-0102,Operations,Work environment,1.5
+EMP-0102,Operations,Communication quality,1.5
+EMP-0103,Operations,Overall job satisfaction,5.0
+EMP-0103,Operations,Work-life balance,5.0
+EMP-0103,Operations,Management effectiveness,5.0
+EMP-0103,Operations,Career growth opportunities,4.5
+EMP-0103,Operations,Team collaboration,5.0
+EMP-0103,Operations,Compensation fairness,5.0
+EMP-0103,Operations,Work environment,4.1
+EMP-0103,Operations,Communication quality,5.0
+EMP-0104,Engineering,Overall job satisfaction,3.7
+EMP-0104,Engineering,Work-life balance,4.0
+EMP-0104,Engineering,Management effectiveness,3.9
+EMP-0104,Engineering,Career growth opportunities,4.1
+EMP-0104,Engineering,Team collaboration,4.0
+EMP-0104,Engineering,Compensation fairness,4.9
+EMP-0104,Engineering,Work environment,3.4
+EMP-0104,Engineering,Communication quality,4.0
+EMP-0105,Sales,Overall job satisfaction,2.7
+EMP-0105,Sales,Work-life balance,4.6
+EMP-0105,Sales,Management effectiveness,3.6
+EMP-0105,Sales,Career growth opportunities,5.0
+EMP-0105,Sales,Team collaboration,5.0
+EMP-0105,Sales,Compensation fairness,4.7
+EMP-0105,Sales,Work environment,3.2
+EMP-0105,Sales,Communication quality,4.5
+EMP-0106,Marketing,Overall job satisfaction,2.7
+EMP-0106,Marketing,Work-life balance,2.2
+EMP-0106,Marketing,Management effectiveness,2.9
+EMP-0106,Marketing,Career growth opportunities,1.5
+EMP-0106,Marketing,Team collaboration,3.3
+EMP-0106,Marketing,Compensation fairness,3.3
+EMP-0106,Marketing,Work environment,3.2
+EMP-0106,Marketing,Communication quality,3.2
+EMP-0107,Operations,Overall job satisfaction,3.9
+EMP-0107,Operations,Work-life balance,3.1
+EMP-0107,Operations,Management effectiveness,2.9
+EMP-0107,Operations,Career growth opportunities,2.8
+EMP-0107,Operations,Team collaboration,3.2
+EMP-0107,Operations,Compensation fairness,3.0
+EMP-0107,Operations,Work environment,2.4
+EMP-0107,Operations,Communication quality,3.9
+EMP-0108,Finance,Overall job satisfaction,3.9
+EMP-0108,Finance,Work-life balance,3.7
+EMP-0108,Finance,Management effectiveness,3.8
+EMP-0108,Finance,Career growth opportunities,4.1
+EMP-0108,Finance,Team collaboration,3.5
+EMP-0108,Finance,Compensation fairness,3.8
+EMP-0108,Finance,Work environment,3.4
+EMP-0108,Finance,Communication quality,3.8
+EMP-0109,Sales,Overall job satisfaction,2.7
+EMP-0109,Sales,Work-life balance,3.4
+EMP-0109,Sales,Management effectiveness,3.3
+EMP-0109,Sales,Career growth opportunities,3.7
+EMP-0109,Sales,Team collaboration,3.2
+EMP-0109,Sales,Compensation fairness,3.1
+EMP-0109,Sales,Work environment,3.1
+EMP-0109,Sales,Communication quality,2.8
+EMP-0110,Marketing,Overall job satisfaction,4.5
+EMP-0110,Marketing,Work-life balance,4.6
+EMP-0110,Marketing,Management effectiveness,5.0
+EMP-0110,Marketing,Career growth opportunities,3.8
+EMP-0110,Marketing,Team collaboration,4.9
+EMP-0110,Marketing,Compensation fairness,4.6
+EMP-0110,Marketing,Work environment,4.3
+EMP-0110,Marketing,Communication quality,5.0
+EMP-0111,HR,Overall job satisfaction,3.1
+EMP-0111,HR,Work-life balance,3.1
+EMP-0111,HR,Management effectiveness,4.1
+EMP-0111,HR,Career growth opportunities,4.2
+EMP-0111,HR,Team collaboration,4.1
+EMP-0111,HR,Compensation fairness,3.9
+EMP-0111,HR,Work environment,3.6
+EMP-0111,HR,Communication quality,4.7
+EMP-0112,Operations,Overall job satisfaction,4.8
+EMP-0112,Operations,Work-life balance,5.0
+EMP-0112,Operations,Management effectiveness,4.2
+EMP-0112,Operations,Career growth opportunities,4.6
+EMP-0112,Operations,Team collaboration,5.0
+EMP-0112,Operations,Compensation fairness,5.0
+EMP-0112,Operations,Work environment,5.0
+EMP-0112,Operations,Communication quality,4.4
+EMP-0113,Operations,Overall job satisfaction,4.3
+EMP-0113,Operations,Work-life balance,3.8
+EMP-0113,Operations,Management effectiveness,4.0
+EMP-0113,Operations,Career growth opportunities,4.0
+EMP-0113,Operations,Team collaboration,3.9
+EMP-0113,Operations,Compensation fairness,4.0
+EMP-0113,Operations,Work environment,4.6
+EMP-0113,Operations,Communication quality,4.5
+EMP-0114,Marketing,Overall job satisfaction,2.7
+EMP-0114,Marketing,Work-life balance,2.6
+EMP-0114,Marketing,Management effectiveness,2.4
+EMP-0114,Marketing,Career growth opportunities,2.5
+EMP-0114,Marketing,Team collaboration,2.9
+EMP-0114,Marketing,Compensation fairness,2.7
+EMP-0114,Marketing,Work environment,3.0
+EMP-0114,Marketing,Communication quality,2.3
+EMP-0115,HR,Overall job satisfaction,5.0
+EMP-0115,HR,Work-life balance,5.0
+EMP-0115,HR,Management effectiveness,4.5
+EMP-0115,HR,Career growth opportunities,4.6
+EMP-0115,HR,Team collaboration,4.7
+EMP-0115,HR,Compensation fairness,4.5
+EMP-0115,HR,Work environment,4.8
+EMP-0115,HR,Communication quality,3.7
+EMP-0116,Marketing,Overall job satisfaction,2.7
+EMP-0116,Marketing,Work-life balance,4.0
+EMP-0116,Marketing,Management effectiveness,3.3
+EMP-0116,Marketing,Career growth opportunities,3.8
+EMP-0116,Marketing,Team collaboration,3.4
+EMP-0116,Marketing,Compensation fairness,3.5
+EMP-0116,Marketing,Work environment,3.4
+EMP-0116,Marketing,Communication quality,4.0
+EMP-0117,Finance,Overall job satisfaction,2.0
+EMP-0117,Finance,Work-life balance,1.8
+EMP-0117,Finance,Management effectiveness,1.9
+EMP-0117,Finance,Career growth opportunities,2.8
+EMP-0117,Finance,Team collaboration,1.5
+EMP-0117,Finance,Compensation fairness,3.0
+EMP-0117,Finance,Work environment,1.8
+EMP-0117,Finance,Communication quality,1.6
+EMP-0118,Engineering,Overall job satisfaction,2.7
+EMP-0118,Engineering,Work-life balance,3.5
+EMP-0118,Engineering,Management effectiveness,3.8
+EMP-0118,Engineering,Career growth opportunities,3.0
+EMP-0118,Engineering,Team collaboration,3.3
+EMP-0118,Engineering,Compensation fairness,3.1
+EMP-0118,Engineering,Work environment,3.3
+EMP-0118,Engineering,Communication quality,4.3
+EMP-0119,Operations,Overall job satisfaction,2.6
+EMP-0119,Operations,Work-life balance,2.5
+EMP-0119,Operations,Management effectiveness,2.4
+EMP-0119,Operations,Career growth opportunities,2.1
+EMP-0119,Operations,Team collaboration,1.9
+EMP-0119,Operations,Compensation fairness,3.6
+EMP-0119,Operations,Work environment,2.6
+EMP-0119,Operations,Communication quality,2.9
+EMP-0120,Engineering,Overall job satisfaction,3.5
+EMP-0120,Engineering,Work-life balance,3.2
+EMP-0120,Engineering,Management effectiveness,4.0
+EMP-0120,Engineering,Career growth opportunities,3.5
+EMP-0120,Engineering,Team collaboration,2.9
+EMP-0120,Engineering,Compensation fairness,3.5
+EMP-0120,Engineering,Work environment,4.0
+EMP-0120,Engineering,Communication quality,2.9
+EMP-0121,Sales,Overall job satisfaction,4.0
+EMP-0121,Sales,Work-life balance,4.5
+EMP-0121,Sales,Management effectiveness,5.0
+EMP-0121,Sales,Career growth opportunities,5.0
+EMP-0121,Sales,Team collaboration,4.5
+EMP-0121,Sales,Compensation fairness,4.1
+EMP-0121,Sales,Work environment,4.9
+EMP-0121,Sales,Communication quality,4.7
+EMP-0122,Operations,Overall job satisfaction,3.4
+EMP-0122,Operations,Work-life balance,4.0
+EMP-0122,Operations,Management effectiveness,4.0
+EMP-0122,Operations,Career growth opportunities,3.2
+EMP-0122,Operations,Team collaboration,4.4
+EMP-0122,Operations,Compensation fairness,4.5
+EMP-0122,Operations,Work environment,4.0
+EMP-0122,Operations,Communication quality,3.9
+EMP-0123,Engineering,Overall job satisfaction,3.6
+EMP-0123,Engineering,Work-life balance,3.7
+EMP-0123,Engineering,Management effectiveness,3.8
+EMP-0123,Engineering,Career growth opportunities,3.4
+EMP-0123,Engineering,Team collaboration,3.7
+EMP-0123,Engineering,Compensation fairness,3.0
+EMP-0123,Engineering,Work environment,3.2
+EMP-0123,Engineering,Communication quality,3.2
+EMP-0124,Operations,Overall job satisfaction,4.1
+EMP-0124,Operations,Work-life balance,3.6
+EMP-0124,Operations,Management effectiveness,3.7
+EMP-0124,Operations,Career growth opportunities,3.3
+EMP-0124,Operations,Team collaboration,3.4
+EMP-0124,Operations,Compensation fairness,4.3
+EMP-0124,Operations,Work environment,4.4
+EMP-0124,Operations,Communication quality,3.3
+EMP-0125,Sales,Overall job satisfaction,2.5
+EMP-0125,Sales,Work-life balance,1.9
+EMP-0125,Sales,Management effectiveness,1.8
+EMP-0125,Sales,Career growth opportunities,2.3
+EMP-0125,Sales,Team collaboration,2.2
+EMP-0125,Sales,Compensation fairness,2.2
+EMP-0125,Sales,Work environment,1.9
+EMP-0125,Sales,Communication quality,2.0
+EMP-0126,Marketing,Overall job satisfaction,4.3
+EMP-0126,Marketing,Work-life balance,4.2
+EMP-0126,Marketing,Management effectiveness,4.3
+EMP-0126,Marketing,Career growth opportunities,4.0
+EMP-0126,Marketing,Team collaboration,4.4
+EMP-0126,Marketing,Compensation fairness,3.9
+EMP-0126,Marketing,Work environment,4.9
+EMP-0126,Marketing,Communication quality,3.7
+EMP-0127,Marketing,Overall job satisfaction,4.2
+EMP-0127,Marketing,Work-life balance,4.4
+EMP-0127,Marketing,Management effectiveness,4.0
+EMP-0127,Marketing,Career growth opportunities,4.0
+EMP-0127,Marketing,Team collaboration,3.7
+EMP-0127,Marketing,Compensation fairness,3.7
+EMP-0127,Marketing,Work environment,4.7
+EMP-0127,Marketing,Communication quality,4.3
+EMP-0128,Finance,Overall job satisfaction,2.1
+EMP-0128,Finance,Work-life balance,1.7
+EMP-0128,Finance,Management effectiveness,2.3
+EMP-0128,Finance,Career growth opportunities,1.7
+EMP-0128,Finance,Team collaboration,2.6
+EMP-0128,Finance,Compensation fairness,2.3
+EMP-0128,Finance,Work environment,3.0
+EMP-0128,Finance,Communication quality,1.3
+EMP-0129,HR,Overall job satisfaction,4.0
+EMP-0129,HR,Work-life balance,4.4
+EMP-0129,HR,Management effectiveness,5.0
+EMP-0129,HR,Career growth opportunities,4.2
+EMP-0129,HR,Team collaboration,3.7
+EMP-0129,HR,Compensation fairness,4.5
+EMP-0129,HR,Work environment,3.7
+EMP-0129,HR,Communication quality,3.8
+EMP-0130,Sales,Overall job satisfaction,2.9
+EMP-0130,Sales,Work-life balance,3.7
+EMP-0130,Sales,Management effectiveness,4.4
+EMP-0130,Sales,Career growth opportunities,2.9
+EMP-0130,Sales,Team collaboration,3.4
+EMP-0130,Sales,Compensation fairness,3.3
+EMP-0130,Sales,Work environment,3.2
+EMP-0130,Sales,Communication quality,3.5
+EMP-0131,Marketing,Overall job satisfaction,3.4
+EMP-0131,Marketing,Work-life balance,3.1
+EMP-0131,Marketing,Management effectiveness,2.9
+EMP-0131,Marketing,Career growth opportunities,4.4
+EMP-0131,Marketing,Team collaboration,3.5
+EMP-0131,Marketing,Compensation fairness,2.9
+EMP-0131,Marketing,Work environment,3.8
+EMP-0131,Marketing,Communication quality,3.8
+EMP-0132,Operations,Overall job satisfaction,2.3
+EMP-0132,Operations,Work-life balance,2.2
+EMP-0132,Operations,Management effectiveness,2.6
+EMP-0132,Operations,Career growth opportunities,3.3
+EMP-0132,Operations,Team collaboration,2.4
+EMP-0132,Operations,Compensation fairness,1.6
+EMP-0132,Operations,Work environment,2.6
+EMP-0132,Operations,Communication quality,2.6
+EMP-0133,Sales,Overall job satisfaction,1.6
+EMP-0133,Sales,Work-life balance,1.3
+EMP-0133,Sales,Management effectiveness,1.9
+EMP-0133,Sales,Career growth opportunities,1.8
+EMP-0133,Sales,Team collaboration,1.8
+EMP-0133,Sales,Compensation fairness,3.0
+EMP-0133,Sales,Work environment,1.5
+EMP-0133,Sales,Communication quality,2.0
+EMP-0134,Engineering,Overall job satisfaction,3.0
+EMP-0134,Engineering,Work-life balance,3.8
+EMP-0134,Engineering,Management effectiveness,3.3
+EMP-0134,Engineering,Career growth opportunities,3.9
+EMP-0134,Engineering,Team collaboration,3.7
+EMP-0134,Engineering,Compensation fairness,3.7
+EMP-0134,Engineering,Work environment,3.7
+EMP-0134,Engineering,Communication quality,3.8
+EMP-0135,Operations,Overall job satisfaction,4.2
+EMP-0135,Operations,Work-life balance,3.2
+EMP-0135,Operations,Management effectiveness,3.8
+EMP-0135,Operations,Career growth opportunities,3.4
+EMP-0135,Operations,Team collaboration,3.3
+EMP-0135,Operations,Compensation fairness,4.6
+EMP-0135,Operations,Work environment,3.7
+EMP-0135,Operations,Communication quality,3.2
+EMP-0136,Operations,Overall job satisfaction,3.0
+EMP-0136,Operations,Work-life balance,4.0
+EMP-0136,Operations,Management effectiveness,2.8
+EMP-0136,Operations,Career growth opportunities,4.0
+EMP-0136,Operations,Team collaboration,3.2
+EMP-0136,Operations,Compensation fairness,3.9
+EMP-0136,Operations,Work environment,3.6
+EMP-0136,Operations,Communication quality,3.7
+EMP-0137,Marketing,Overall job satisfaction,4.1
+EMP-0137,Marketing,Work-life balance,4.2
+EMP-0137,Marketing,Management effectiveness,4.1
+EMP-0137,Marketing,Career growth opportunities,4.4
+EMP-0137,Marketing,Team collaboration,3.7
+EMP-0137,Marketing,Compensation fairness,4.6
+EMP-0137,Marketing,Work environment,4.3
+EMP-0137,Marketing,Communication quality,4.0
+EMP-0138,HR,Overall job satisfaction,2.4
+EMP-0138,HR,Work-life balance,2.6
+EMP-0138,HR,Management effectiveness,3.1
+EMP-0138,HR,Career growth opportunities,3.6
+EMP-0138,HR,Team collaboration,3.0
+EMP-0138,HR,Compensation fairness,2.9
+EMP-0138,HR,Work environment,2.9
+EMP-0138,HR,Communication quality,3.3
+EMP-0139,Finance,Overall job satisfaction,3.2
+EMP-0139,Finance,Work-life balance,2.7
+EMP-0139,Finance,Management effectiveness,2.7
+EMP-0139,Finance,Career growth opportunities,2.3
+EMP-0139,Finance,Team collaboration,3.2
+EMP-0139,Finance,Compensation fairness,3.7
+EMP-0139,Finance,Work environment,3.1
+EMP-0139,Finance,Communication quality,2.6
+EMP-0140,Marketing,Overall job satisfaction,4.6
+EMP-0140,Marketing,Work-life balance,4.0
+EMP-0140,Marketing,Management effectiveness,3.9
+EMP-0140,Marketing,Career growth opportunities,4.6
+EMP-0140,Marketing,Team collaboration,3.9
+EMP-0140,Marketing,Compensation fairness,5.0
+EMP-0140,Marketing,Work environment,4.1
+EMP-0140,Marketing,Communication quality,4.6
+EMP-0141,Engineering,Overall job satisfaction,2.9
+EMP-0141,Engineering,Work-life balance,3.2
+EMP-0141,Engineering,Management effectiveness,2.5
+EMP-0141,Engineering,Career growth opportunities,2.3
+EMP-0141,Engineering,Team collaboration,2.4
+EMP-0141,Engineering,Compensation fairness,2.1
+EMP-0141,Engineering,Work environment,2.0
+EMP-0141,Engineering,Communication quality,1.8
+EMP-0142,Finance,Overall job satisfaction,1.9
+EMP-0142,Finance,Work-life balance,2.2
+EMP-0142,Finance,Management effectiveness,1.6
+EMP-0142,Finance,Career growth opportunities,2.3
+EMP-0142,Finance,Team collaboration,2.4
+EMP-0142,Finance,Compensation fairness,2.4
+EMP-0142,Finance,Work environment,1.9
+EMP-0142,Finance,Communication quality,2.4
+EMP-0143,Operations,Overall job satisfaction,3.7
+EMP-0143,Operations,Work-life balance,4.0
+EMP-0143,Operations,Management effectiveness,3.9
+EMP-0143,Operations,Career growth opportunities,3.2
+EMP-0143,Operations,Team collaboration,4.5
+EMP-0143,Operations,Compensation fairness,3.9
+EMP-0143,Operations,Work environment,3.7
+EMP-0143,Operations,Communication quality,4.2
+EMP-0144,Operations,Overall job satisfaction,1.6
+EMP-0144,Operations,Work-life balance,2.1
+EMP-0144,Operations,Management effectiveness,2.5
+EMP-0144,Operations,Career growth opportunities,2.2
+EMP-0144,Operations,Team collaboration,3.0
+EMP-0144,Operations,Compensation fairness,2.7
+EMP-0144,Operations,Work environment,2.1
+EMP-0144,Operations,Communication quality,3.3
+EMP-0145,Marketing,Overall job satisfaction,4.0
+EMP-0145,Marketing,Work-life balance,5.0
+EMP-0145,Marketing,Management effectiveness,4.2
+EMP-0145,Marketing,Career growth opportunities,2.7
+EMP-0145,Marketing,Team collaboration,4.0
+EMP-0145,Marketing,Compensation fairness,3.9
+EMP-0145,Marketing,Work environment,4.6
+EMP-0145,Marketing,Communication quality,4.0
+EMP-0146,Sales,Overall job satisfaction,5.0
+EMP-0146,Sales,Work-life balance,4.4
+EMP-0146,Sales,Management effectiveness,5.0
+EMP-0146,Sales,Career growth opportunities,5.0
+EMP-0146,Sales,Team collaboration,4.0
+EMP-0146,Sales,Compensation fairness,4.6
+EMP-0146,Sales,Work environment,3.8
+EMP-0146,Sales,Communication quality,4.3
+EMP-0147,Sales,Overall job satisfaction,2.4
+EMP-0147,Sales,Work-life balance,2.3
+EMP-0147,Sales,Management effectiveness,2.1
+EMP-0147,Sales,Career growth opportunities,3.5
+EMP-0147,Sales,Team collaboration,2.2
+EMP-0147,Sales,Compensation fairness,2.2
+EMP-0147,Sales,Work environment,3.3
+EMP-0147,Sales,Communication quality,2.9
+EMP-0148,HR,Overall job satisfaction,3.4
+EMP-0148,HR,Work-life balance,2.4
+EMP-0148,HR,Management effectiveness,3.5
+EMP-0148,HR,Career growth opportunities,3.3
+EMP-0148,HR,Team collaboration,4.2
+EMP-0148,HR,Compensation fairness,4.0
+EMP-0148,HR,Work environment,2.6
+EMP-0148,HR,Communication quality,4.1
+EMP-0149,Finance,Overall job satisfaction,2.7
+EMP-0149,Finance,Work-life balance,2.8
+EMP-0149,Finance,Management effectiveness,2.9
+EMP-0149,Finance,Career growth opportunities,4.2
+EMP-0149,Finance,Team collaboration,1.7
+EMP-0149,Finance,Compensation fairness,4.0
+EMP-0149,Finance,Work environment,3.5
+EMP-0149,Finance,Communication quality,3.2
+EMP-0150,Operations,Overall job satisfaction,1.6
+EMP-0150,Operations,Work-life balance,2.4
+EMP-0150,Operations,Management effectiveness,3.9
+EMP-0150,Operations,Career growth opportunities,3.7
+EMP-0150,Operations,Team collaboration,3.3
+EMP-0150,Operations,Compensation fairness,3.2
+EMP-0150,Operations,Work environment,2.0
+EMP-0150,Operations,Communication quality,2.7
+EMP-0151,Marketing,Overall job satisfaction,4.7
+EMP-0151,Marketing,Work-life balance,3.9
+EMP-0151,Marketing,Management effectiveness,5.0
+EMP-0151,Marketing,Career growth opportunities,3.3
+EMP-0151,Marketing,Team collaboration,4.6
+EMP-0151,Marketing,Compensation fairness,5.0
+EMP-0151,Marketing,Work environment,3.7
+EMP-0151,Marketing,Communication quality,4.3
+EMP-0152,Marketing,Overall job satisfaction,1.8
+EMP-0152,Marketing,Work-life balance,2.5
+EMP-0152,Marketing,Management effectiveness,2.9
+EMP-0152,Marketing,Career growth opportunities,1.8
+EMP-0152,Marketing,Team collaboration,2.5
+EMP-0152,Marketing,Compensation fairness,2.3
+EMP-0152,Marketing,Work environment,1.9
+EMP-0152,Marketing,Communication quality,1.8
+EMP-0153,Sales,Overall job satisfaction,4.3
+EMP-0153,Sales,Work-life balance,3.2
+EMP-0153,Sales,Management effectiveness,4.5
+EMP-0153,Sales,Career growth opportunities,4.4
+EMP-0153,Sales,Team collaboration,3.7
+EMP-0153,Sales,Compensation fairness,4.4
+EMP-0153,Sales,Work environment,4.5
+EMP-0153,Sales,Communication quality,3.8
+EMP-0154,HR,Overall job satisfaction,3.9
+EMP-0154,HR,Work-life balance,3.9
+EMP-0154,HR,Management effectiveness,3.8
+EMP-0154,HR,Career growth opportunities,3.7
+EMP-0154,HR,Team collaboration,3.5
+EMP-0154,HR,Compensation fairness,3.1
+EMP-0154,HR,Work environment,4.6
+EMP-0154,HR,Communication quality,3.7
+EMP-0155,Marketing,Overall job satisfaction,3.3
+EMP-0155,Marketing,Work-life balance,3.2
+EMP-0155,Marketing,Management effectiveness,3.9
+EMP-0155,Marketing,Career growth opportunities,3.6
+EMP-0155,Marketing,Team collaboration,4.3
+EMP-0155,Marketing,Compensation fairness,3.3
+EMP-0155,Marketing,Work environment,2.9
+EMP-0155,Marketing,Communication quality,4.1
+EMP-0156,HR,Overall job satisfaction,1.8
+EMP-0156,HR,Work-life balance,1.0
+EMP-0156,HR,Management effectiveness,2.3
+EMP-0156,HR,Career growth opportunities,2.4
+EMP-0156,HR,Team collaboration,1.3
+EMP-0156,HR,Compensation fairness,2.2
+EMP-0156,HR,Work environment,2.2
+EMP-0156,HR,Communication quality,2.5
+EMP-0157,Engineering,Overall job satisfaction,4.0
+EMP-0157,Engineering,Work-life balance,4.2
+EMP-0157,Engineering,Management effectiveness,3.5
+EMP-0157,Engineering,Career growth opportunities,3.7
+EMP-0157,Engineering,Team collaboration,3.1
+EMP-0157,Engineering,Compensation fairness,4.4
+EMP-0157,Engineering,Work environment,3.4
+EMP-0157,Engineering,Communication quality,3.6
+EMP-0158,Sales,Overall job satisfaction,3.0
+EMP-0158,Sales,Work-life balance,2.6
+EMP-0158,Sales,Management effectiveness,3.3
+EMP-0158,Sales,Career growth opportunities,2.8
+EMP-0158,Sales,Team collaboration,3.6
+EMP-0158,Sales,Compensation fairness,3.0
+EMP-0158,Sales,Work environment,2.9
+EMP-0158,Sales,Communication quality,2.8
+EMP-0159,Sales,Overall job satisfaction,3.2
+EMP-0159,Sales,Work-life balance,4.2
+EMP-0159,Sales,Management effectiveness,4.2
+EMP-0159,Sales,Career growth opportunities,4.1
+EMP-0159,Sales,Team collaboration,3.7
+EMP-0159,Sales,Compensation fairness,3.6
+EMP-0159,Sales,Work environment,4.1
+EMP-0159,Sales,Communication quality,4.1
+EMP-0160,Marketing,Overall job satisfaction,3.3
+EMP-0160,Marketing,Work-life balance,3.1
+EMP-0160,Marketing,Management effectiveness,2.3
+EMP-0160,Marketing,Career growth opportunities,2.3
+EMP-0160,Marketing,Team collaboration,2.9
+EMP-0160,Marketing,Compensation fairness,3.3
+EMP-0160,Marketing,Work environment,2.9
+EMP-0160,Marketing,Communication quality,2.0
+EMP-0161,Engineering,Overall job satisfaction,3.4
+EMP-0161,Engineering,Work-life balance,4.0
+EMP-0161,Engineering,Management effectiveness,4.0
+EMP-0161,Engineering,Career growth opportunities,3.6
+EMP-0161,Engineering,Team collaboration,4.2
+EMP-0161,Engineering,Compensation fairness,4.2
+EMP-0161,Engineering,Work environment,3.9
+EMP-0161,Engineering,Communication quality,4.0
+EMP-0162,Operations,Overall job satisfaction,5.0
+EMP-0162,Operations,Work-life balance,5.0
+EMP-0162,Operations,Management effectiveness,4.9
+EMP-0162,Operations,Career growth opportunities,5.0
+EMP-0162,Operations,Team collaboration,5.0
+EMP-0162,Operations,Compensation fairness,5.0
+EMP-0162,Operations,Work environment,5.0
+EMP-0162,Operations,Communication quality,4.8
+EMP-0163,Sales,Overall job satisfaction,4.4
+EMP-0163,Sales,Work-life balance,4.2
+EMP-0163,Sales,Management effectiveness,4.8
+EMP-0163,Sales,Career growth opportunities,4.1
+EMP-0163,Sales,Team collaboration,4.0
+EMP-0163,Sales,Compensation fairness,5.0
+EMP-0163,Sales,Work environment,5.0
+EMP-0163,Sales,Communication quality,4.3
+EMP-0164,HR,Overall job satisfaction,4.0
+EMP-0164,HR,Work-life balance,4.4
+EMP-0164,HR,Management effectiveness,4.4
+EMP-0164,HR,Career growth opportunities,5.0
+EMP-0164,HR,Team collaboration,4.6
+EMP-0164,HR,Compensation fairness,3.9
+EMP-0164,HR,Work environment,3.9
+EMP-0164,HR,Communication quality,4.7
+EMP-0165,Operations,Overall job satisfaction,4.2
+EMP-0165,Operations,Work-life balance,4.3
+EMP-0165,Operations,Management effectiveness,3.8
+EMP-0165,Operations,Career growth opportunities,4.5
+EMP-0165,Operations,Team collaboration,3.2
+EMP-0165,Operations,Compensation fairness,3.3
+EMP-0165,Operations,Work environment,4.1
+EMP-0165,Operations,Communication quality,4.1
+EMP-0166,Marketing,Overall job satisfaction,3.3
+EMP-0166,Marketing,Work-life balance,2.7
+EMP-0166,Marketing,Management effectiveness,3.4
+EMP-0166,Marketing,Career growth opportunities,2.9
+EMP-0166,Marketing,Team collaboration,3.9
+EMP-0166,Marketing,Compensation fairness,3.0
+EMP-0166,Marketing,Work environment,2.4
+EMP-0166,Marketing,Communication quality,4.0
+EMP-0167,Engineering,Overall job satisfaction,4.7
+EMP-0167,Engineering,Work-life balance,4.4
+EMP-0167,Engineering,Management effectiveness,5.0
+EMP-0167,Engineering,Career growth opportunities,3.7
+EMP-0167,Engineering,Team collaboration,4.5
+EMP-0167,Engineering,Compensation fairness,4.1
+EMP-0167,Engineering,Work environment,4.1
+EMP-0167,Engineering,Communication quality,4.7
+EMP-0168,Sales,Overall job satisfaction,3.1
+EMP-0168,Sales,Work-life balance,3.1
+EMP-0168,Sales,Management effectiveness,3.5
+EMP-0168,Sales,Career growth opportunities,3.2
+EMP-0168,Sales,Team collaboration,2.8
+EMP-0168,Sales,Compensation fairness,3.7
+EMP-0168,Sales,Work environment,2.2
+EMP-0168,Sales,Communication quality,2.4
+EMP-0169,Sales,Overall job satisfaction,3.6
+EMP-0169,Sales,Work-life balance,3.5
+EMP-0169,Sales,Management effectiveness,3.8
+EMP-0169,Sales,Career growth opportunities,3.0
+EMP-0169,Sales,Team collaboration,3.2
+EMP-0169,Sales,Compensation fairness,3.9
+EMP-0169,Sales,Work environment,3.2
+EMP-0169,Sales,Communication quality,2.7
+EMP-0170,HR,Overall job satisfaction,5.0
+EMP-0170,HR,Work-life balance,5.0
+EMP-0170,HR,Management effectiveness,4.1
+EMP-0170,HR,Career growth opportunities,4.4
+EMP-0170,HR,Team collaboration,4.5
+EMP-0170,HR,Compensation fairness,4.5
+EMP-0170,HR,Work environment,4.9
+EMP-0170,HR,Communication quality,4.3
+EMP-0171,Marketing,Overall job satisfaction,3.0
+EMP-0171,Marketing,Work-life balance,3.3
+EMP-0171,Marketing,Management effectiveness,2.6
+EMP-0171,Marketing,Career growth opportunities,3.0
+EMP-0171,Marketing,Team collaboration,3.6
+EMP-0171,Marketing,Compensation fairness,3.0
+EMP-0171,Marketing,Work environment,4.1
+EMP-0171,Marketing,Communication quality,3.4
+EMP-0172,Operations,Overall job satisfaction,3.7
+EMP-0172,Operations,Work-life balance,4.3
+EMP-0172,Operations,Management effectiveness,4.1
+EMP-0172,Operations,Career growth opportunities,3.2
+EMP-0172,Operations,Team collaboration,4.4
+EMP-0172,Operations,Compensation fairness,4.2
+EMP-0172,Operations,Work environment,5.0
+EMP-0172,Operations,Communication quality,4.6
+EMP-0173,Engineering,Overall job satisfaction,3.9
+EMP-0173,Engineering,Work-life balance,2.9
+EMP-0173,Engineering,Management effectiveness,3.5
+EMP-0173,Engineering,Career growth opportunities,1.8
+EMP-0173,Engineering,Team collaboration,2.4
+EMP-0173,Engineering,Compensation fairness,2.9
+EMP-0173,Engineering,Work environment,2.0
+EMP-0173,Engineering,Communication quality,3.3
+EMP-0174,Sales,Overall job satisfaction,3.5
+EMP-0174,Sales,Work-life balance,4.1
+EMP-0174,Sales,Management effectiveness,4.4
+EMP-0174,Sales,Career growth opportunities,3.7
+EMP-0174,Sales,Team collaboration,3.7
+EMP-0174,Sales,Compensation fairness,3.6
+EMP-0174,Sales,Work environment,4.0
+EMP-0174,Sales,Communication quality,4.0
+EMP-0175,HR,Overall job satisfaction,3.7
+EMP-0175,HR,Work-life balance,4.3
+EMP-0175,HR,Management effectiveness,3.8
+EMP-0175,HR,Career growth opportunities,3.6
+EMP-0175,HR,Team collaboration,4.3
+EMP-0175,HR,Compensation fairness,4.1
+EMP-0175,HR,Work environment,3.4
+EMP-0175,HR,Communication quality,3.8
+EMP-0176,Marketing,Overall job satisfaction,4.3
+EMP-0176,Marketing,Work-life balance,4.7
+EMP-0176,Marketing,Management effectiveness,3.9
+EMP-0176,Marketing,Career growth opportunities,4.2
+EMP-0176,Marketing,Team collaboration,3.4
+EMP-0176,Marketing,Compensation fairness,3.7
+EMP-0176,Marketing,Work environment,3.9
+EMP-0176,Marketing,Communication quality,3.6
+EMP-0177,Marketing,Overall job satisfaction,3.8
+EMP-0177,Marketing,Work-life balance,3.3
+EMP-0177,Marketing,Management effectiveness,3.6
+EMP-0177,Marketing,Career growth opportunities,3.0
+EMP-0177,Marketing,Team collaboration,3.9
+EMP-0177,Marketing,Compensation fairness,3.7
+EMP-0177,Marketing,Work environment,4.2
+EMP-0177,Marketing,Communication quality,4.1
+EMP-0178,Finance,Overall job satisfaction,4.3
+EMP-0178,Finance,Work-life balance,4.4
+EMP-0178,Finance,Management effectiveness,4.5
+EMP-0178,Finance,Career growth opportunities,4.0
+EMP-0178,Finance,Team collaboration,4.7
+EMP-0178,Finance,Compensation fairness,4.2
+EMP-0178,Finance,Work environment,4.2
+EMP-0178,Finance,Communication quality,4.3
+EMP-0179,Engineering,Overall job satisfaction,4.8
+EMP-0179,Engineering,Work-life balance,4.7
+EMP-0179,Engineering,Management effectiveness,4.9
+EMP-0179,Engineering,Career growth opportunities,4.6
+EMP-0179,Engineering,Team collaboration,5.0
+EMP-0179,Engineering,Compensation fairness,5.0
+EMP-0179,Engineering,Work environment,4.6
+EMP-0179,Engineering,Communication quality,2.9
+EMP-0180,Engineering,Overall job satisfaction,4.3
+EMP-0180,Engineering,Work-life balance,4.0
+EMP-0180,Engineering,Management effectiveness,4.0
+EMP-0180,Engineering,Career growth opportunities,4.1
+EMP-0180,Engineering,Team collaboration,3.6
+EMP-0180,Engineering,Compensation fairness,4.2
+EMP-0180,Engineering,Work environment,4.6
+EMP-0180,Engineering,Communication quality,4.6
+EMP-0181,Engineering,Overall job satisfaction,3.5
+EMP-0181,Engineering,Work-life balance,2.4
+EMP-0181,Engineering,Management effectiveness,4.3
+EMP-0181,Engineering,Career growth opportunities,3.5
+EMP-0181,Engineering,Team collaboration,3.1
+EMP-0181,Engineering,Compensation fairness,3.8
+EMP-0181,Engineering,Work environment,4.3
+EMP-0181,Engineering,Communication quality,3.5
+EMP-0182,Marketing,Overall job satisfaction,3.3
+EMP-0182,Marketing,Work-life balance,3.5
+EMP-0182,Marketing,Management effectiveness,3.0
+EMP-0182,Marketing,Career growth opportunities,2.5
+EMP-0182,Marketing,Team collaboration,2.7
+EMP-0182,Marketing,Compensation fairness,3.1
+EMP-0182,Marketing,Work environment,2.7
+EMP-0182,Marketing,Communication quality,3.3
+EMP-0183,HR,Overall job satisfaction,3.4
+EMP-0183,HR,Work-life balance,3.2
+EMP-0183,HR,Management effectiveness,1.9
+EMP-0183,HR,Career growth opportunities,2.5
+EMP-0183,HR,Team collaboration,2.9
+EMP-0183,HR,Compensation fairness,3.0
+EMP-0183,HR,Work environment,2.9
+EMP-0183,HR,Communication quality,2.9
+EMP-0184,Marketing,Overall job satisfaction,4.0
+EMP-0184,Marketing,Work-life balance,1.9
+EMP-0184,Marketing,Management effectiveness,2.9
+EMP-0184,Marketing,Career growth opportunities,3.3
+EMP-0184,Marketing,Team collaboration,3.2
+EMP-0184,Marketing,Compensation fairness,4.0
+EMP-0184,Marketing,Work environment,3.8
+EMP-0184,Marketing,Communication quality,3.6
+EMP-0185,HR,Overall job satisfaction,4.3
+EMP-0185,HR,Work-life balance,4.9
+EMP-0185,HR,Management effectiveness,3.9
+EMP-0185,HR,Career growth opportunities,4.3
+EMP-0185,HR,Team collaboration,4.2
+EMP-0185,HR,Compensation fairness,4.5
+EMP-0185,HR,Work environment,4.3
+EMP-0185,HR,Communication quality,5.0
+EMP-0186,Sales,Overall job satisfaction,3.0
+EMP-0186,Sales,Work-life balance,2.7
+EMP-0186,Sales,Management effectiveness,2.4
+EMP-0186,Sales,Career growth opportunities,3.3
+EMP-0186,Sales,Team collaboration,2.6
+EMP-0186,Sales,Compensation fairness,2.0
+EMP-0186,Sales,Work environment,2.3
+EMP-0186,Sales,Communication quality,2.4
+EMP-0187,Finance,Overall job satisfaction,3.7
+EMP-0187,Finance,Work-life balance,3.1
+EMP-0187,Finance,Management effectiveness,3.6
+EMP-0187,Finance,Career growth opportunities,3.3
+EMP-0187,Finance,Team collaboration,3.1
+EMP-0187,Finance,Compensation fairness,2.8
+EMP-0187,Finance,Work environment,3.3
+EMP-0187,Finance,Communication quality,3.6
+EMP-0188,Operations,Overall job satisfaction,3.4
+EMP-0188,Operations,Work-life balance,2.4
+EMP-0188,Operations,Management effectiveness,2.9
+EMP-0188,Operations,Career growth opportunities,2.5
+EMP-0188,Operations,Team collaboration,3.2
+EMP-0188,Operations,Compensation fairness,2.9
+EMP-0188,Operations,Work environment,3.9
+EMP-0188,Operations,Communication quality,2.8
+EMP-0189,Marketing,Overall job satisfaction,3.3
+EMP-0189,Marketing,Work-life balance,3.3
+EMP-0189,Marketing,Management effectiveness,3.1
+EMP-0189,Marketing,Career growth opportunities,3.9
+EMP-0189,Marketing,Team collaboration,4.0
+EMP-0189,Marketing,Compensation fairness,4.9
+EMP-0189,Marketing,Work environment,3.6
+EMP-0189,Marketing,Communication quality,3.7
+EMP-0190,Sales,Overall job satisfaction,3.1
+EMP-0190,Sales,Work-life balance,3.6
+EMP-0190,Sales,Management effectiveness,2.9
+EMP-0190,Sales,Career growth opportunities,2.9
+EMP-0190,Sales,Team collaboration,2.4
+EMP-0190,Sales,Compensation fairness,3.5
+EMP-0190,Sales,Work environment,3.4
+EMP-0190,Sales,Communication quality,3.7
+EMP-0191,HR,Overall job satisfaction,4.0
+EMP-0191,HR,Work-life balance,3.8
+EMP-0191,HR,Management effectiveness,3.5
+EMP-0191,HR,Career growth opportunities,3.6
+EMP-0191,HR,Team collaboration,3.5
+EMP-0191,HR,Compensation fairness,3.9
+EMP-0191,HR,Work environment,3.2
+EMP-0191,HR,Communication quality,3.2
+EMP-0192,Marketing,Overall job satisfaction,4.5
+EMP-0192,Marketing,Work-life balance,3.6
+EMP-0192,Marketing,Management effectiveness,4.4
+EMP-0192,Marketing,Career growth opportunities,4.0
+EMP-0192,Marketing,Team collaboration,4.3
+EMP-0192,Marketing,Compensation fairness,3.4
+EMP-0192,Marketing,Work environment,3.9
+EMP-0192,Marketing,Communication quality,3.1
+EMP-0193,Marketing,Overall job satisfaction,2.2
+EMP-0193,Marketing,Work-life balance,3.1
+EMP-0193,Marketing,Management effectiveness,2.3
+EMP-0193,Marketing,Career growth opportunities,2.8
+EMP-0193,Marketing,Team collaboration,2.2
+EMP-0193,Marketing,Compensation fairness,2.6
+EMP-0193,Marketing,Work environment,2.5
+EMP-0193,Marketing,Communication quality,2.7
+EMP-0194,Finance,Overall job satisfaction,4.9
+EMP-0194,Finance,Work-life balance,4.3
+EMP-0194,Finance,Management effectiveness,5.0
+EMP-0194,Finance,Career growth opportunities,5.0
+EMP-0194,Finance,Team collaboration,5.0
+EMP-0194,Finance,Compensation fairness,5.0
+EMP-0194,Finance,Work environment,5.0
+EMP-0194,Finance,Communication quality,5.0
+EMP-0195,Marketing,Overall job satisfaction,3.9
+EMP-0195,Marketing,Work-life balance,3.5
+EMP-0195,Marketing,Management effectiveness,3.5
+EMP-0195,Marketing,Career growth opportunities,2.7
+EMP-0195,Marketing,Team collaboration,4.1
+EMP-0195,Marketing,Compensation fairness,3.7
+EMP-0195,Marketing,Work environment,4.0
+EMP-0195,Marketing,Communication quality,2.2
+EMP-0196,Finance,Overall job satisfaction,3.6
+EMP-0196,Finance,Work-life balance,3.9
+EMP-0196,Finance,Management effectiveness,4.1
+EMP-0196,Finance,Career growth opportunities,3.0
+EMP-0196,Finance,Team collaboration,3.3
+EMP-0196,Finance,Compensation fairness,4.4
+EMP-0196,Finance,Work environment,3.3
+EMP-0196,Finance,Communication quality,3.9
+EMP-0197,Sales,Overall job satisfaction,5.0
+EMP-0197,Sales,Work-life balance,3.9
+EMP-0197,Sales,Management effectiveness,5.0
+EMP-0197,Sales,Career growth opportunities,4.8
+EMP-0197,Sales,Team collaboration,5.0
+EMP-0197,Sales,Compensation fairness,4.8
+EMP-0197,Sales,Work environment,4.7
+EMP-0197,Sales,Communication quality,4.8
+EMP-0198,HR,Overall job satisfaction,1.6
+EMP-0198,HR,Work-life balance,2.4
+EMP-0198,HR,Management effectiveness,1.9
+EMP-0198,HR,Career growth opportunities,1.9
+EMP-0198,HR,Team collaboration,2.2
+EMP-0198,HR,Compensation fairness,2.5
+EMP-0198,HR,Work environment,2.1
+EMP-0198,HR,Communication quality,2.9
+EMP-0199,Marketing,Overall job satisfaction,3.5
+EMP-0199,Marketing,Work-life balance,3.8
+EMP-0199,Marketing,Management effectiveness,3.6
+EMP-0199,Marketing,Career growth opportunities,3.7
+EMP-0199,Marketing,Team collaboration,3.1
+EMP-0199,Marketing,Compensation fairness,3.7
+EMP-0199,Marketing,Work environment,3.8
+EMP-0199,Marketing,Communication quality,2.9
+EMP-0200,HR,Overall job satisfaction,2.8
+EMP-0200,HR,Work-life balance,3.1
+EMP-0200,HR,Management effectiveness,2.3
+EMP-0200,HR,Career growth opportunities,2.1
+EMP-0200,HR,Team collaboration,3.2
+EMP-0200,HR,Compensation fairness,2.3
+EMP-0200,HR,Work environment,2.4
+EMP-0200,HR,Communication quality,3.2

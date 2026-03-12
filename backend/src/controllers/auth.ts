@@ -1,93 +1,103 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import authService, { AuthError } from "../services/auth";
-import {
-  sendSuccess,
-  sendCreated,
-  sendError,
-  sendBadRequest,
-} from "../utils/response";
+import { sendSuccess, sendCreated, sendError, sendBadRequest } from "../utils/response";
 import logger from "../utils/logger";
-
-async function register(req: AuthenticatedRequest, res: Response): Promise<void> {
-  try {
-    const { email, password, firstName, lastName, roleName } = req.body;
-
-    if (!email || !password || !firstName || !lastName) {
-      sendBadRequest(res, "Email, password, firstName, and lastName are required");
-      return;
-    }
-
-    if (password.length < 8) {
-      sendBadRequest(res, "Password must be at least 8 characters");
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      sendBadRequest(res, "Invalid email format");
-      return;
-    }
-
-    const result = await authService.register({
-      email,
-      password,
-      firstName,
-      lastName,
-      roleName,
-    });
-
-    sendCreated(res, result, "Registration successful");
-  } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
-    logger.error("Register error:", error);
-    sendError(res, "Registration failed");
-  }
-}
 
 async function login(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      sendBadRequest(res, "Email and password are required");
-      return;
-    }
-
+    if (!email || !password) { sendBadRequest(res, "Email and password are required"); return; }
     const result = await authService.login({ email, password });
-
     sendSuccess(res, result, "Login successful");
   } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
     logger.error("Login error:", error);
     sendError(res, "Login failed");
   }
 }
 
+async function createUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
+    const { email, password, firstName, lastName, roleName, organizationId, moduleAccess } = req.body;
+    if (!email || !password || !firstName || !lastName || !roleName || !organizationId) {
+      sendBadRequest(res, "Required: email, password, firstName, lastName, roleName, organizationId"); return;
+    }
+    if (password.length < 8) { sendBadRequest(res, "Password must be at least 8 characters"); return; }
+    const user = await authService.createUser({ email, password, firstName, lastName, roleName, organizationId, moduleAccess }, req.user.userId);
+    sendCreated(res, user, "User created successfully");
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Create user error:", error);
+    sendError(res, "Failed to create user");
+  }
+}
+
+async function listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { organizationId } = req.query;
+    const users = await authService.listUsers(organizationId as string);
+    sendSuccess(res, users, "Users retrieved");
+  } catch (error) { logger.error("List users error:", error); sendError(res, "Failed to list users"); }
+}
+
+async function updateUserModuleAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { modules } = req.body;
+    if (!modules || !Array.isArray(modules)) { sendBadRequest(res, "Modules array required"); return; }
+    const result = await authService.updateUserModuleAccess(req.params.userId, modules);
+    sendSuccess(res, result, "Module access updated");
+  } catch (error) { logger.error("Update module access error:", error); sendError(res, "Failed to update module access"); }
+}
+
+async function deactivateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    await authService.deactivateUser(req.params.userId);
+    sendSuccess(res, null, "User deactivated");
+  } catch (error) { logger.error("Deactivate user error:", error); sendError(res, "Failed to deactivate user"); }
+}
+
+async function activateUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    await authService.activateUser(req.params.userId);
+    sendSuccess(res, null, "User activated");
+  } catch (error) { logger.error("Activate user error:", error); sendError(res, "Failed to activate user"); }
+}
+
+async function listOrganizations(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const orgs = await authService.listOrganizations();
+    sendSuccess(res, orgs, "Organizations retrieved");
+  } catch (error) { logger.error("List orgs error:", error); sendError(res, "Failed to list organizations"); }
+}
+
+async function createOrganization(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { name, slug, description, enabledModules } = req.body;
+    if (!name || !slug) { sendBadRequest(res, "Name and slug required"); return; }
+    const org = await authService.createOrganization({ name, slug, description, enabledModules });
+    sendCreated(res, org, "Organization created");
+  } catch (error) { logger.error("Create org error:", error); sendError(res, "Failed to create organization"); }
+}
+
+async function updateOrgModules(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { modules } = req.body;
+    if (!modules || !Array.isArray(modules)) { sendBadRequest(res, "Modules array required"); return; }
+    const result = await authService.updateOrgModules(req.params.orgId, modules);
+    sendSuccess(res, result, "Organization modules updated");
+  } catch (error) { logger.error("Update org modules error:", error); sendError(res, "Failed to update org modules"); }
+}
+
 async function refresh(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      sendBadRequest(res, "Refresh token is required");
-      return;
-    }
-
+    if (!refreshToken) { sendBadRequest(res, "Refresh token required"); return; }
     const tokens = await authService.refreshTokens(refreshToken);
-
-    sendSuccess(res, tokens, "Tokens refreshed successfully");
+    sendSuccess(res, tokens, "Tokens refreshed");
   } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
-    logger.error("Refresh error:", error);
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
     sendError(res, "Token refresh failed");
   }
 }
@@ -95,129 +105,67 @@ async function refresh(req: AuthenticatedRequest, res: Response): Promise<void> 
 async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      sendBadRequest(res, "Refresh token is required");
-      return;
-    }
-
-    if (!req.user) {
-      sendError(res, "Unauthorized", 401);
-      return;
-    }
-
+    if (!refreshToken || !req.user) { sendBadRequest(res, "Refresh token required"); return; }
     await authService.logout(refreshToken, req.user.userId);
-
-    sendSuccess(res, null, "Logged out successfully");
-  } catch (error) {
-    logger.error("Logout error:", error);
-    sendError(res, "Logout failed");
-  }
+    sendSuccess(res, null, "Logged out");
+  } catch (error) { sendError(res, "Logout failed"); }
 }
 
 async function logoutAll(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      sendError(res, "Unauthorized", 401);
-      return;
-    }
-
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
     const count = await authService.logoutAll(req.user.userId);
-
     sendSuccess(res, { revokedSessions: count }, "All sessions revoked");
-  } catch (error) {
-    logger.error("Logout all error:", error);
-    sendError(res, "Failed to revoke all sessions");
-  }
+  } catch (error) { sendError(res, "Failed to revoke sessions"); }
 }
 
 async function getProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      sendError(res, "Unauthorized", 401);
-      return;
-    }
-
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
     const profile = await authService.getProfile(req.user.userId);
-
     sendSuccess(res, profile, "Profile retrieved");
   } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
-    logger.error("Get profile error:", error);
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
     sendError(res, "Failed to retrieve profile");
   }
 }
 
 async function updateProfile(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      sendError(res, "Unauthorized", 401);
-      return;
-    }
-
-    const { firstName, lastName, avatar } = req.body;
-
-    const profile = await authService.updateProfile(req.user.userId, {
-      firstName,
-      lastName,
-      avatar,
-    });
-
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
+    const profile = await authService.updateProfile(req.user.userId, req.body);
     sendSuccess(res, profile, "Profile updated");
-  } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
-    logger.error("Update profile error:", error);
-    sendError(res, "Failed to update profile");
-  }
+  } catch (error) { sendError(res, "Failed to update profile"); }
 }
 
 async function changePassword(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    if (!req.user) {
-      sendError(res, "Unauthorized", 401);
-      return;
-    }
-
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
     const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      sendBadRequest(res, "Current password and new password are required");
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      sendBadRequest(res, "New password must be at least 8 characters");
-      return;
-    }
-
+    if (!currentPassword || !newPassword) { sendBadRequest(res, "Current and new password required"); return; }
+    if (newPassword.length < 8) { sendBadRequest(res, "New password must be at least 8 characters"); return; }
     await authService.changePassword(req.user.userId, currentPassword, newPassword);
-
-    sendSuccess(res, null, "Password changed successfully. Please login again.");
+    sendSuccess(res, null, "Password changed. Please login again.");
   } catch (error) {
-    if (error instanceof AuthError) {
-      sendError(res, error.message, error.statusCode);
-      return;
-    }
-    logger.error("Change password error:", error);
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
     sendError(res, "Failed to change password");
   }
 }
 
+async function getRoles(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const { PrismaClient } = await import("@prisma/client");
+    const p = new PrismaClient();
+    const roles = await p.role.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+    await p.$disconnect();
+    sendSuccess(res, roles, "Roles retrieved");
+  } catch (error) { sendError(res, "Failed to retrieve roles"); }
+}
+
 const authController = {
-  register,
-  login,
-  refresh,
-  logout,
-  logoutAll,
-  getProfile,
-  updateProfile,
-  changePassword,
+  login, createUser, listUsers, updateUserModuleAccess, deactivateUser, activateUser,
+  listOrganizations, createOrganization, updateOrgModules,
+  refresh, logout, logoutAll, getProfile, updateProfile, changePassword, getRoles,
 };
 
 export default authController;
