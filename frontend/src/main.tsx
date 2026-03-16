@@ -38,6 +38,9 @@ import AlertCenter from "./pages/alerts/AlertCenter";
 // Chatbot
 import Chatbot from "./pages/chatbot/Chatbot";
 
+// Settings
+import Settings from "./pages/settings/Settings";
+
 // Workforce Analytics
 import AttritionDashboard from "./pages/workforce/AttritionDashboard";
 import SatisfactionTrends from "./pages/workforce/SatisfactionTrends";
@@ -114,7 +117,8 @@ function App() {
           <Route path="/alerts/*" element={<ProtectedRoute><AlertCenter /></ProtectedRoute>} />
 
           <Route path="/chatbot" element={<ProtectedRoute><Chatbot /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><PlaceholderPage title="Settings" module="Settings" /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
           {/* Redirect */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
