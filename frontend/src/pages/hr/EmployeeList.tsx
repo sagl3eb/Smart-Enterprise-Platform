@@ -1,53 +1,156 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardBody, StatCard, Badge, LoadingSpinner, EmptyState } from "../../components/ui/Card";
-import { Users, Plus, Search, UserCheck, UserX, Briefcase } from "lucide-react";
+import { Modal, FormInput, FormSelect, FormTextarea, Button, ConfirmDialog, Toast } from "../../components/ui/Modal";
+import { Users, Plus, Search, UserCheck, Briefcase, Edit, Trash2, Eye } from "lucide-react";
 import { formatCurrency, formatDate, statusColor } from "../../utils/formatters";
 import api from "../../api/client";
-import type { Employee, ApiMeta } from "../../types";
+import type { Employee, Department, ApiMeta } from "../../types";
+
+const emptyForm = {
+  employeeCode: "", departmentId: "", firstName: "", lastName: "", email: "",
+  phone: "", position: "", hireDate: "", salary: "", employmentType: "full_time",
+  address: "", emergencyContact: "",
+};
 
 export default function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [meta, setMeta] = useState<ApiMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [deptFilter, setDeptFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  useEffect(() => { fetchData(); }, [page, departmentFilter, statusFilter]);
+  // Modal state
+  const [showForm, setShowForm] = useState(false);
+  const [showView, setShowView] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [viewEmployee, setViewEmployee] = useState<Employee | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ page: String(page), limit: "15" });
-      if (departmentFilter) params.set("departmentId", departmentFilter);
+      if (deptFilter) params.set("departmentId", deptFilter);
       if (statusFilter) params.set("status", statusFilter);
       if (search) params.set("search", search);
       const res = await api.get(`/hr/employees?${params}`);
       setEmployees(res.data.data || []);
       setMeta(res.data.meta || null);
     } catch {
-      setEmployees([
-        { id: "1", employeeCode: "EMP-001", departmentId: "1", firstName: "Ahmad", lastName: "Rahman", email: "ahmad@nexus.com", phone: "+60123456789", position: "Senior Engineer", hireDate: "2021-03-15", salary: 95000, employmentType: "full_time", status: "active", managerId: null, dateOfBirth: null, address: null, emergencyContact: null, department: { id: "1", name: "Engineering", code: "ENG" }, manager: null },
-        { id: "2", employeeCode: "EMP-002", departmentId: "2", firstName: "Sarah", lastName: "Chen", email: "sarah@nexus.com", phone: null, position: "Sales Manager", hireDate: "2020-08-01", salary: 82000, employmentType: "full_time", status: "active", managerId: null, dateOfBirth: null, address: null, emergencyContact: null, department: { id: "2", name: "Sales", code: "SAL" }, manager: null },
-        { id: "3", employeeCode: "EMP-003", departmentId: "1", firstName: "David", lastName: "Kumar", email: "david@nexus.com", phone: null, position: "Junior Developer", hireDate: "2024-01-10", salary: 55000, employmentType: "full_time", status: "active", managerId: "1", dateOfBirth: null, address: null, emergencyContact: null, department: { id: "1", name: "Engineering", code: "ENG" }, manager: { id: "1", firstName: "Ahmad", lastName: "Rahman" } },
-        { id: "4", employeeCode: "EMP-004", departmentId: "3", firstName: "Lisa", lastName: "Wong", email: "lisa@nexus.com", phone: null, position: "Marketing Lead", hireDate: "2022-05-20", salary: 72000, employmentType: "full_time", status: "active", managerId: null, dateOfBirth: null, address: null, emergencyContact: null, department: { id: "3", name: "Marketing", code: "MKT" }, manager: null },
-        { id: "5", employeeCode: "EMP-005", departmentId: "4", firstName: "Mohammed", lastName: "Ali", email: "mohammed@nexus.com", phone: null, position: "HR Specialist", hireDate: "2023-02-14", salary: 60000, employmentType: "full_time", status: "active", managerId: null, dateOfBirth: null, address: null, emergencyContact: null, department: { id: "4", name: "HR", code: "HR" }, manager: null },
-      ]);
+      setEmployees([]);
     } finally { setLoading(false); }
+  }, [page, deptFilter, statusFilter, search]);
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await api.get("/hr/departments");
+      setDepartments(res.data.data || []);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchDepartments(); }, []);
+
+  const setField = (key: string, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
+
+  const openCreate = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (emp: Employee) => {
+    setForm({
+      employeeCode: emp.employeeCode,
+      departmentId: emp.departmentId,
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      email: emp.email,
+      phone: emp.phone || "",
+      position: emp.position,
+      hireDate: emp.hireDate.slice(0, 10),
+      salary: String(emp.salary),
+      employmentType: emp.employmentType,
+      address: emp.address || "",
+      emergencyContact: emp.emergencyContact || "",
+    });
+    setEditingId(emp.id);
+    setShowForm(true);
+  };
+
+  const openView = async (id: string) => {
+    try {
+      const res = await api.get(`/hr/employees/${id}`);
+      setViewEmployee(res.data.data);
+      setShowView(true);
+    } catch {
+      setToast({ message: "Failed to load employee details", type: "error" });
+    }
+  };
+
+  const handleSave = async () => {
+    if (!form.firstName || !form.lastName || !form.email || !form.position || !form.departmentId || !form.hireDate || !form.salary) {
+      setToast({ message: "Please fill in all required fields", type: "error" });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        salary: Number(form.salary),
+        employeeCode: form.employeeCode || `EMP-${Date.now().toString().slice(-5)}`,
+      };
+
+      if (editingId) {
+        await api.put(`/hr/employees/${editingId}`, payload);
+        setToast({ message: "Employee updated successfully", type: "success" });
+      } else {
+        await api.post("/hr/employees", payload);
+        setToast({ message: "Employee created successfully", type: "success" });
+      }
+      setShowForm(false);
+      fetchData();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to save employee";
+      setToast({ message: msg, type: "error" });
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setSaving(true);
+    try {
+      await api.delete(`/hr/employees/${deleteId}`);
+      setToast({ message: "Employee terminated", type: "success" });
+      setShowDelete(false);
+      setDeleteId(null);
+      fetchData();
+    } catch {
+      setToast({ message: "Failed to terminate employee", type: "error" });
+    } finally { setSaving(false); }
   };
 
   const activeCount = employees.filter((e) => e.status === "active").length;
-  const departments = [...new Set(employees.map((e) => e.department?.name).filter(Boolean))];
+  const deptOptions = departments.map((d) => ({ value: d.id, label: d.name }));
 
   return (
     <PageWrapper title="Employee Management" subtitle="HR — Employee directory">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Employees" value={String(meta?.total || employees.length)} icon={<Users size={20} />} />
         <StatCard title="Active" value={String(activeCount)} icon={<UserCheck size={20} />} />
         <StatCard title="Departments" value={String(departments.length)} icon={<Briefcase size={20} />} />
-        <StatCard title="Avg Salary" value={formatCurrency(employees.length > 0 ? employees.reduce((s, e) => s + e.salary, 0) / employees.length : 0)} icon={<UserX size={20} />} />
+        <StatCard title="Avg Salary" value={formatCurrency(employees.length > 0 ? employees.reduce((s, e) => s + e.salary, 0) / employees.length : 0)} icon={<Users size={20} />} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -56,14 +159,17 @@ export default function EmployeeList() {
           <input value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && fetchData()} placeholder="Search employees..."
             className="w-full pl-9 pr-4 py-2.5 rounded-[10px] text-sm bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] text-[#1E1B2E] dark:text-[#EDE9FE] placeholder-[#9B93B8] focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30" />
         </div>
+        <select value={deptFilter} onChange={(e) => { setDeptFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2.5 rounded-[10px] text-sm bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] text-[#4C4566] dark:text-[#B8AEDD]">
+          <option value="">All Departments</option>
+          {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
         <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="px-3 py-2.5 rounded-[10px] text-sm bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] text-[#4C4566] dark:text-[#B8AEDD]">
           <option value="">All Statuses</option>
           {["active", "on_leave", "terminated"].map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
         </select>
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-sm font-medium text-white bg-[#5B21B6] hover:bg-[#7C3AED] transition-colors ml-auto">
-          <Plus size={16} /> Add Employee
-        </button>
+        <Button onClick={openCreate} className="ml-auto"><Plus size={16} /> Add Employee</Button>
       </div>
 
       {loading ? <LoadingSpinner /> : employees.length === 0 ? <EmptyState title="No employees found" icon={<Users size={32} />} /> : (
@@ -72,7 +178,7 @@ export default function EmployeeList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#E8E4F3] dark:border-[#2E2850]">
-                  {["Code", "Name", "Department", "Position", "Hire Date", "Salary", "Status"].map((h) => (
+                  {["Code", "Name", "Department", "Position", "Hire Date", "Salary", "Status", "Actions"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-medium text-[#9B93B8]">{h}</th>
                   ))}
                 </tr>
@@ -97,6 +203,13 @@ export default function EmployeeList() {
                     <td className="px-5 py-3 text-[#4C4566] dark:text-[#B8AEDD]">{formatDate(emp.hireDate)}</td>
                     <td className="px-5 py-3 font-serif font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{formatCurrency(emp.salary)}</td>
                     <td className="px-5 py-3"><Badge className={statusColor(emp.status)}>{emp.status}</Badge></td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => openView(emp.id)} className="p-1.5 rounded-[6px] hover:bg-[#EDE9FE] dark:hover:bg-[#2D1F5E] text-[#9B93B8] hover:text-[#5B21B6]"><Eye size={14} /></button>
+                        <button onClick={() => openEdit(emp)} className="p-1.5 rounded-[6px] hover:bg-[#EDE9FE] dark:hover:bg-[#2D1F5E] text-[#9B93B8] hover:text-[#5B21B6]"><Edit size={14} /></button>
+                        <button onClick={() => { setDeleteId(emp.id); setShowDelete(true); }} className="p-1.5 rounded-[6px] hover:bg-red-50 dark:hover:bg-red-900/20 text-[#9B93B8] hover:text-red-500"><Trash2 size={14} /></button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -107,13 +220,76 @@ export default function EmployeeList() {
 
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-between mt-4">
-          <p className="text-xs text-[#9B93B8]">Page {meta.page} of {meta.totalPages}</p>
+          <p className="text-xs text-[#9B93B8]">Page {meta.page} of {meta.totalPages} ({meta.total} total)</p>
           <div className="flex gap-2">
-            <button onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1} className="px-3 py-1.5 rounded-[8px] text-xs bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] disabled:opacity-40">Previous</button>
-            <button onClick={() => setPage(page + 1)} disabled={page >= meta.totalPages} className="px-3 py-1.5 rounded-[8px] text-xs bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] disabled:opacity-40">Next</button>
+            <Button variant="ghost" onClick={() => setPage(Math.max(1, page - 1))} disabled={page <= 1}>Previous</Button>
+            <Button variant="ghost" onClick={() => setPage(page + 1)} disabled={page >= meta.totalPages}>Next</Button>
           </div>
         </div>
       )}
+
+      {/* Create/Edit Modal */}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Employee" : "Add Employee"} size="lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormInput label="First Name" value={form.firstName} onChange={(v) => setField("firstName", v)} required />
+          <FormInput label="Last Name" value={form.lastName} onChange={(v) => setField("lastName", v)} required />
+          <FormInput label="Email" value={form.email} onChange={(v) => setField("email", v)} type="email" required />
+          <FormInput label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} placeholder="+60..." />
+          <FormInput label="Employee Code" value={form.employeeCode} onChange={(v) => setField("employeeCode", v)} placeholder="Auto-generated if empty" disabled={!!editingId} />
+          <FormSelect label="Department" value={form.departmentId} onChange={(v) => setField("departmentId", v)} options={deptOptions} required placeholder="Select department" />
+          <FormInput label="Position" value={form.position} onChange={(v) => setField("position", v)} required />
+          <FormInput label="Hire Date" value={form.hireDate} onChange={(v) => setField("hireDate", v)} type="date" required />
+          <FormInput label="Salary" value={form.salary} onChange={(v) => setField("salary", v)} type="number" required />
+          <FormSelect label="Employment Type" value={form.employmentType} onChange={(v) => setField("employmentType", v)} options={[
+            { value: "full_time", label: "Full Time" }, { value: "part_time", label: "Part Time" },
+            { value: "contract", label: "Contract" }, { value: "intern", label: "Intern" },
+          ]} />
+          <FormTextarea label="Address" value={form.address} onChange={(v) => setField("address", v)} />
+          <FormInput label="Emergency Contact" value={form.emergencyContact} onChange={(v) => setField("emergencyContact", v)} />
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
+          <Button onClick={handleSave} loading={saving}>{editingId ? "Save Changes" : "Create Employee"}</Button>
+        </div>
+      </Modal>
+
+      {/* View Modal */}
+      <Modal open={showView} onClose={() => { setShowView(false); setViewEmployee(null); }} title="Employee Details" size="lg">
+        {viewEmployee && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              ["Code", viewEmployee.employeeCode],
+              ["Name", `${viewEmployee.firstName} ${viewEmployee.lastName}`],
+              ["Email", viewEmployee.email],
+              ["Phone", viewEmployee.phone || "—"],
+              ["Department", viewEmployee.department?.name || "—"],
+              ["Position", viewEmployee.position],
+              ["Hire Date", formatDate(viewEmployee.hireDate)],
+              ["Salary", formatCurrency(viewEmployee.salary)],
+              ["Employment Type", viewEmployee.employmentType.replace("_", " ")],
+              ["Status", viewEmployee.status],
+              ["Address", viewEmployee.address || "—"],
+              ["Emergency Contact", viewEmployee.emergencyContact || "—"],
+            ].map(([label, value]) => (
+              <div key={label}>
+                <p className="text-[10px] font-medium text-[#9B93B8] uppercase">{label}</p>
+                <p className="text-sm text-[#1E1B2E] dark:text-[#EDE9FE]">{value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+
+      {/* Delete Confirm */}
+      <ConfirmDialog
+        open={showDelete}
+        onClose={() => { setShowDelete(false); setDeleteId(null); }}
+        onConfirm={handleDelete}
+        title="Terminate Employee"
+        message="Are you sure you want to terminate this employee? This action will change their status to terminated."
+        confirmLabel="Terminate"
+        loading={saving}
+      />
     </PageWrapper>
   );
 }
