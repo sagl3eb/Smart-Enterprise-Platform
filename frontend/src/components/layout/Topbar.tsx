@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sun, Moon, Bell, ChevronDown } from "lucide-react";
+import { Search, Sun, Moon, Bell, ChevronDown, ShieldCheck, UserCircle } from "lucide-react";
 import useThemeStore from "../../store/themeStore";
 import useAuthStore from "../../store/authStore";
 import useAlertStore from "../../store/alertStore";
+import useViewModeStore from "../../store/viewModeStore";
 
 interface TopbarProps {
   title: string;
@@ -15,8 +16,10 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const unreadCount = useAlertStore((s) => s.unreadCount);
+  const { mode: viewMode, toggle: toggleView } = useViewModeStore();
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
+  const isAdmin = user?.role.name === "admin" || user?.role.name === "super_admin";
 
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b
@@ -46,6 +49,21 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
               focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30 focus:border-[#5B21B6]"
           />
         </div>
+
+        {/* View Mode Toggle (Admin only) */}
+        {isAdmin && (
+          <button
+            onClick={toggleView}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-xs font-medium transition-colors border ${
+              viewMode === "admin"
+                ? "bg-[#D97706] text-white border-[#D97706]"
+                : "bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#5B21B6] border-[#E8E4F3] dark:border-[#2E2850]"
+            }`}
+          >
+            {viewMode === "admin" ? <ShieldCheck size={14} /> : <UserCircle size={14} />}
+            {viewMode === "admin" ? "Admin View" : "Employee View"}
+          </button>
+        )}
 
         {/* Theme Toggle */}
         <button
