@@ -109,11 +109,11 @@ function App() {
           <Route path="/ict/admin" element={<ProtectedRoute><AdminICT /></ProtectedRoute>} />
           <Route path="/ict/*" element={<ProtectedRoute><PlaceholderPage title="ICT Management" module="ICT" /></ProtectedRoute>} />
 
-          {/* Construction */}
-          <Route path="/construction" element={<ProtectedRoute><ViewSwitch admin={<AdminConstruction />} employee={<Projects />} /></ProtectedRoute>} />
-          <Route path="/construction/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-          <Route path="/construction/admin" element={<ProtectedRoute><AdminConstruction /></ProtectedRoute>} />
-          <Route path="/construction/*" element={<ProtectedRoute><PlaceholderPage title="Construction" module="Construction" /></ProtectedRoute>} />
+          {/* Projects */}
+          <Route path="/projects" element={<ProtectedRoute><ViewSwitch admin={<AdminConstruction />} employee={<Projects />} /></ProtectedRoute>} />
+          <Route path="/projects/list" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+          <Route path="/projects/admin" element={<ProtectedRoute><AdminConstruction /></ProtectedRoute>} />
+          <Route path="/projects/*" element={<ProtectedRoute><PlaceholderPage title="Projects" module="Construction" /></ProtectedRoute>} />
 
           {/* Workforce — shared (analytics pages are the same for both) */}
           <Route path="/workforce" element={<ProtectedRoute><AttritionDashboard /></ProtectedRoute>} />

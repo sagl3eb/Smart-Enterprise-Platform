@@ -306,6 +306,19 @@ async function updateOrgModules(organizationId: string, modules: Array<{ moduleN
   return prisma.orgModule.findMany({ where: { organizationId } });
 }
 
+async function deleteOrganization(organizationId: string) {
+  // Check if org has users
+  const userCount = await prisma.user.count({ where: { organizationId } });
+  if (userCount > 0) {
+    throw new AuthError("Cannot delete organization with active users. Remove or reassign all users first.", 400);
+  }
+  
+  // Delete modules first, then org
+  await prisma.orgModule.deleteMany({ where: { organizationId } });
+  await prisma.organization.delete({ where: { id: organizationId } });
+  logger.info(`Organization deleted: ${organizationId}`);
+}
+
 // ─── Refresh / Logout / Profile (unchanged logic) ─────────
 
 async function refreshTokens(oldRefreshToken: string): Promise<AuthTokens> {
@@ -413,7 +426,7 @@ export class AuthError extends Error {
 const authService = {
   login, createUser, listUsers, updateUserModuleAccess,
   deactivateUser, activateUser,
-  listOrganizations, createOrganization, updateOrgModules,
+  listOrganizations, createOrganization, updateOrgModules, deleteOrganization,
   refreshTokens, logout, logoutAll,
   getProfile, updateProfile, changePassword,
 };

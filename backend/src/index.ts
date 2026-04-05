@@ -53,10 +53,10 @@ import accountingRoutes from "./routes/accounting";
 import ictRoutes from "./routes/ict";
 import constructionRoutes from "./routes/construction";
 import workforceRoutes from "./routes/workforce";
-// import predictiveRoutes from "./routes/predictive";
+import predictiveRoutes from "./routes/predictive";
 import alertRoutes from "./routes/alerts";
 import dashboardRoutes from "./routes/dashboard";
-// import chatbotRoutes from "./routes/chatbot";
+import chatbotRoutes from "./routes/chatbot";
 
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/hr", hrRoutes);
@@ -65,10 +65,10 @@ app.use("/api/v1/accounting", accountingRoutes);
 app.use("/api/v1/ict", ictRoutes);
 app.use("/api/v1/construction", constructionRoutes);
 app.use("/api/v1/workforce", workforceRoutes);
-// app.use("/api/v1/predictive", predictiveRoutes);
+app.use("/api/v1/predictive", predictiveRoutes);
 app.use("/api/v1/alerts", alertRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
-// app.use("/api/v1/chatbot", chatbotRoutes);
+app.use("/api/v1/chatbot", chatbotRoutes);
 
 // ── 404 handler ────────────────────────────────────────────
 app.use((_req, res) => {

@@ -20,6 +20,36 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
   const navigate = useNavigate();
   const [showProfile, setShowProfile] = useState(false);
   const isAdmin = user?.role.name === "admin" || user?.role.name === "super_admin";
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  const allPages = [
+    { label: "Dashboard", module: "Dashboard", path: "/dashboard", keywords: "home overview kpi" },
+    { label: "Employees", module: "HR", path: "/hr", keywords: "employee staff people hire" },
+    { label: "Budget", module: "Finance", path: "/finance", keywords: "budget money allocation" },
+    { label: "Transactions", module: "Finance", path: "/finance/transactions", keywords: "transaction payment income expense" },
+    { label: "Invoices", module: "Accounting", path: "/accounting", keywords: "invoice bill receipt" },
+    { label: "Chart of Accounts", module: "Accounting", path: "/accounting/chart-of-accounts", keywords: "account ledger balance" },
+    { label: "IT Assets", module: "ICT", path: "/ict", keywords: "asset hardware laptop computer" },
+    { label: "IT Tickets", module: "ICT", path: "/ict/tickets", keywords: "ticket support help issue bug" },
+    { label: "Projects", module: "Projects", path: "/projects", keywords: "project construction site build" },
+    { label: "Attrition Dashboard", module: "Workforce", path: "/workforce", keywords: "attrition risk turnover" },
+    { label: "Satisfaction Trends", module: "Workforce", path: "/workforce/satisfaction", keywords: "satisfaction survey trend" },
+    { label: "Surveys", module: "Workforce", path: "/workforce/surveys", keywords: "survey feedback" },
+    { label: "Predictive Analytics", module: "Predictive", path: "/predictive", keywords: "ml model forecast predict" },
+    { label: "Alert Center", module: "Alerts", path: "/alerts", keywords: "alert notification rule warning" },
+    { label: "Chatbot", module: "Chatbot", path: "/chatbot", keywords: "chat bot ai assistant" },
+    { label: "Settings", module: "Settings", path: "/settings", keywords: "settings profile password theme" },
+    { label: "User Management", module: "Admin", path: "/settings?tab=users", keywords: "user manage role create admin" },
+    { label: "Organizations", module: "Admin", path: "/settings?tab=organization", keywords: "organization org company tenant" },
+  ];
+
+  const searchResults = searchQuery.trim().length > 0
+    ? allPages.filter((p) => {
+        const q = searchQuery.toLowerCase();
+        return p.label.toLowerCase().includes(q) || p.module.toLowerCase().includes(q) || p.keywords.includes(q);
+      }).slice(0, 8)
+    : [];
 
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b
@@ -37,17 +67,38 @@ export default function Topbar({ title, subtitle }: TopbarProps) {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-3">
-        {/* Search */}
+        {/* Global Search */}
         <div className="relative hidden md:block">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9B93B8]" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search modules..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchOpen(true)}
             className="pl-9 pr-4 py-2 text-sm rounded-[10px] w-52
               bg-[#F8F7FF] dark:bg-[#0E0B1F] border border-[#E8E4F3] dark:border-[#2E2850]
               text-[#1E1B2E] dark:text-[#EDE9FE] placeholder-[#9B93B8]
               focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30 focus:border-[#5B21B6]"
           />
+          {searchOpen && searchQuery.trim().length > 0 && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setSearchOpen(false)} />
+              <div className="absolute right-0 top-11 w-72 z-50 rounded-[12px] overflow-hidden bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] shadow-xl max-h-80 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-xs text-[#9B93B8]">No results for "{searchQuery}"</div>
+                ) : (
+                  searchResults.map((r) => (
+                    <button key={r.path} onClick={() => { navigate(r.path); setSearchOpen(false); setSearchQuery(""); }}
+                      className="w-full text-left px-4 py-2.5 hover:bg-[#F8F7FF] dark:hover:bg-[#0E0B1F] border-b border-[#E8E4F3] dark:border-[#2E2850] last:border-0">
+                      <p className="text-sm font-medium text-[#1E1B2E] dark:text-[#EDE9FE]">{r.label}</p>
+                      <p className="text-[10px] text-[#9B93B8]">{r.module} · {r.path}</p>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* View Mode Toggle (Admin only) */}

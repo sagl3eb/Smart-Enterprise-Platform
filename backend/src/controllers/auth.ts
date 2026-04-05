@@ -90,6 +90,17 @@ async function updateOrgModules(req: AuthenticatedRequest, res: Response): Promi
   } catch (error) { logger.error("Update org modules error:", error); sendError(res, "Failed to update org modules"); }
 }
 
+async function deleteOrganization(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    await authService.deleteOrganization(req.params.orgId);
+    sendSuccess(res, null, "Organization deleted");
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Delete org error:", error);
+    sendError(res, "Failed to delete organization");
+  }
+}
+
 async function refresh(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { refreshToken } = req.body;
@@ -164,7 +175,7 @@ async function getRoles(req: AuthenticatedRequest, res: Response): Promise<void>
 
 const authController = {
   login, createUser, listUsers, updateUserModuleAccess, deactivateUser, activateUser,
-  listOrganizations, createOrganization, updateOrgModules,
+  listOrganizations, createOrganization, updateOrgModules, deleteOrganization,
   refresh, logout, logoutAll, getProfile, updateProfile, changePassword, getRoles,
 };
 

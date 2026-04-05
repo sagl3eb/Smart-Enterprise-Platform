@@ -12,7 +12,7 @@ const allNavItems = [
   { to: "/finance", label: "Finance", icon: DollarSign, module: "finance" },
   { to: "/accounting", label: "Accounting", icon: Calculator, module: "accounting" },
   { to: "/ict", label: "ICT Management", icon: Monitor, module: "ict" },
-  { to: "/construction", label: "Construction", icon: HardHat, module: "construction" },
+  { to: "/projects", label: "Projects", icon: HardHat, module: "construction" },
   { to: "/workforce", label: "Workforce Analytics", icon: BarChart3, module: "workforce" },
   { to: "/predictive", label: "Predictive Analytics", icon: TrendingUp, module: "predictive" },
   { to: "/alerts", label: "Alerts", icon: Bell, module: "alerts" },
@@ -80,7 +80,7 @@ export default function Sidebar() {
       <div className="px-3 pb-4 space-y-1 border-t pt-3" style={{ borderColor: "#2A2550" }}>
         {isAdmin && (
           <NavLink
-            to="/admin"
+            to="/settings?tab=users"
             className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all"
             style={{ color: "#D97706" }}
           >

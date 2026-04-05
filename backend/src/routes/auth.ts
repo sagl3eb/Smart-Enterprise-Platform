@@ -26,7 +26,8 @@ router.get("/roles", authenticate, authController.getRoles);
 
 // Admin — Organization Management
 router.get("/organizations", authenticate, requireMinRole("admin"), authController.listOrganizations);
-router.post("/organizations", authenticate, requireRole("super_admin"), authController.createOrganization);
+router.post("/organizations", authenticate, requireMinRole("admin"), authController.createOrganization);
 router.put("/organizations/:orgId/modules", authenticate, requireMinRole("admin"), authController.updateOrgModules);
+router.delete("/organizations/:orgId", authenticate, requireMinRole("admin"), authController.deleteOrganization);
 
 export default router;

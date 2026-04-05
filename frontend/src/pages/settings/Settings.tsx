@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardHeader, CardBody, Badge, LoadingSpinner } from "../../components/ui/Card";
-import { Modal, FormInput, FormSelect, Button, Toast, ConfirmDialog } from "../../components/ui/Modal";
-import { User, Lock, Palette, Users, Shield, Building, Plus, Edit, UserX, UserCheck } from "lucide-react";
+import { Modal, FormInput, FormSelect, FormTextarea, Button, Toast, ConfirmDialog } from "../../components/ui/Modal";
+import { User, Lock, Palette, Users, Shield, Building, Plus, Edit, UserX, UserCheck, Trash2 } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import useThemeStore from "../../store/themeStore";
 import api from "../../api/client";
@@ -15,8 +16,13 @@ export default function Settings() {
   const { user, setUser } = useAuthStore();
   const { mode, toggle } = useThemeStore();
   const isAdmin = user?.role.name === "admin" || user?.role.name === "super_admin";
+  const [searchParams] = useSearchParams();
 
-  const [tab, setTab] = useState<Tab>("profile");
+  const [tab, setTab] = useState<Tab>(() => {
+    const t = searchParams.get("tab");
+    if (t && ["profile", "security", "appearance", "users", "organization"].includes(t)) return t as Tab;
+    return "profile";
+  });
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   // Profile
@@ -313,48 +319,167 @@ export default function Settings() {
           )}
 
           {tab === "organization" && isAdmin && (
-            <>
-              {loadingUsers ? <LoadingSpinner /> : (
-                <div className="space-y-4">
-                  {orgs.map((org) => (
-                    <Card key={org.id}>
-                      <CardHeader className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{org.name}</h3>
-                          <p className="text-xs text-[#9B93B8]">{org.slug} · {org._count.users} user(s)</p>
-                        </div>
-                      </CardHeader>
-                      <CardBody>
-                        <p className="text-xs font-medium text-[#4C4566] dark:text-[#B8AEDD] mb-2">Enabled Modules</p>
-                        <div className="flex flex-wrap gap-2">
-                          {ALL_MODULES.map((m) => {
-                            const enabled = org.modules.find((om) => om.moduleName === m)?.isEnabled ?? false;
-                            return (
-                              <button key={m}
-                                onClick={async () => {
-                                  try {
-                                    await api.put(`/auth/organizations/${org.id}/modules`, { modules: [{ moduleName: m, isEnabled: !enabled }] });
-                                    setToast({ message: `${m} ${!enabled ? "enabled" : "disabled"}`, type: "success" });
-                                    fetchAdminData();
-                                  } catch { setToast({ message: "Failed", type: "error" }); }
-                                }}
-                                className={`px-3 py-1.5 rounded-[20px] text-xs font-medium transition-colors ${
-                                  enabled ? "bg-[#5B21B6] text-white" : "bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#9B93B8]"
-                                }`}>
-                                {m}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </CardBody>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </>
+            <OrgManagement orgs={orgs} loading={loadingUsers} onRefresh={fetchAdminData} toast={toast} setToast={setToast} />
           )}
         </div>
       </div>
     </PageWrapper>
+  );
+}
+
+// ─── Organization CRUD Component ───────────────────────────
+
+function OrgManagement({ orgs, loading, onRefresh, toast, setToast }: {
+  orgs: Array<{ id: string; name: string; slug: string; modules: Array<{ moduleName: string; isEnabled: boolean }>; _count: { users: number } }>;
+  loading: boolean;
+  onRefresh: () => void;
+  toast: { message: string; type: "success" | "error" } | null;
+  setToast: (t: { message: string; type: "success" | "error" } | null) => void;
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", slug: "", description: "", enabledModules: [...ALL_MODULES] });
+  const [saving, setSaving] = useState(false);
+
+  const openCreate = () => {
+    setForm({ name: "", slug: "", description: "", enabledModules: [...ALL_MODULES] });
+    setEditingId(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (org: typeof orgs[0]) => {
+    setForm({
+      name: org.name,
+      slug: org.slug,
+      description: "",
+      enabledModules: org.modules.filter((m) => m.isEnabled).map((m) => m.moduleName),
+    });
+    setEditingId(org.id);
+    setShowForm(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.name || !form.slug) { setToast({ message: "Name and slug required", type: "error" }); return; }
+    setSaving(true);
+    try {
+      if (editingId) {
+        // Update org name + modules
+        await api.put(`/auth/organizations/${editingId}/modules`, {
+          modules: ALL_MODULES.map((m) => ({ moduleName: m, isEnabled: form.enabledModules.includes(m) })),
+        });
+        setToast({ message: "Organization updated", type: "success" });
+      } else {
+        await api.post("/auth/organizations", {
+          name: form.name,
+          slug: form.slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+          description: form.description,
+          enabledModules: form.enabledModules,
+        });
+        setToast({ message: "Organization created", type: "success" });
+      }
+      setShowForm(false);
+      onRefresh();
+    } catch (err: unknown) {
+      setToast({ message: (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed", type: "error" });
+    } finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    setSaving(true);
+    try {
+      await api.delete(`/auth/organizations/${deleteId}`);
+      setToast({ message: "Organization deleted", type: "success" });
+      setShowDelete(false);
+      setDeleteId(null);
+      onRefresh();
+    } catch { setToast({ message: "Cannot delete org with users", type: "error" }); }
+    finally { setSaving(false); }
+  };
+
+  const toggleModule = async (orgId: string, moduleName: string, currentlyEnabled: boolean) => {
+    try {
+      await api.put(`/auth/organizations/${orgId}/modules`, { modules: [{ moduleName, isEnabled: !currentlyEnabled }] });
+      setToast({ message: `${moduleName} ${!currentlyEnabled ? "enabled" : "disabled"}`, type: "success" });
+      onRefresh();
+    } catch { setToast({ message: "Failed", type: "error" }); }
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">Organizations</h3>
+        <Button onClick={openCreate}><Plus size={16} /> Create Organization</Button>
+      </div>
+
+      <div className="space-y-4">
+        {orgs.map((org) => (
+          <Card key={org.id}>
+            <CardHeader className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{org.name}</h3>
+                <p className="text-xs text-[#9B93B8]">{org.slug} · {org._count.users} user(s)</p>
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => openEdit(org)} className="p-1.5 rounded-[6px] hover:bg-[#EDE9FE] dark:hover:bg-[#2D1F5E] text-[#9B93B8] hover:text-[#5B21B6]"><Edit size={14} /></button>
+                {org._count.users === 0 && (
+                  <button onClick={() => { setDeleteId(org.id); setShowDelete(true); }} className="p-1.5 rounded-[6px] hover:bg-red-50 dark:hover:bg-red-900/20 text-[#9B93B8] hover:text-red-500"><Trash2 size={14} /></button>
+                )}
+              </div>
+            </CardHeader>
+            <CardBody>
+              <p className="text-xs font-medium text-[#4C4566] dark:text-[#B8AEDD] mb-2">Modules (click to toggle)</p>
+              <div className="flex flex-wrap gap-2">
+                {ALL_MODULES.map((m) => {
+                  const enabled = org.modules.find((om) => om.moduleName === m)?.isEnabled ?? false;
+                  return (
+                    <button key={m} onClick={() => toggleModule(org.id, m, enabled)}
+                      className={`px-3 py-1.5 rounded-[20px] text-xs font-medium transition-colors ${
+                        enabled ? "bg-[#5B21B6] text-white" : "bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#9B93B8]"
+                      }`}>
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
+
+      <Modal open={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Organization" : "Create Organization"} size="md">
+        <div className="space-y-4">
+          <FormInput label="Organization Name" value={form.name} onChange={(v) => setForm((p) => ({ ...p, name: v }))} required />
+          <FormInput label="Slug (URL-friendly)" value={form.slug} onChange={(v) => setForm((p) => ({ ...p, slug: v }))} required placeholder="e.g. acme-corp" disabled={!!editingId} />
+          {!editingId && <FormTextarea label="Description" value={form.description} onChange={(v) => setForm((p) => ({ ...p, description: v }))} />}
+          <div>
+            <p className="text-xs font-medium text-[#4C4566] dark:text-[#B8AEDD] mb-2">Enable Modules</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_MODULES.map((m) => (
+                <button key={m} onClick={() => setForm((p) => ({
+                  ...p, enabledModules: p.enabledModules.includes(m) ? p.enabledModules.filter((x) => x !== m) : [...p.enabledModules, m]
+                }))}
+                  className={`px-3 py-1.5 rounded-[20px] text-xs font-medium transition-colors ${
+                    form.enabledModules.includes(m) ? "bg-[#5B21B6] text-white" : "bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#5B21B6]"
+                  }`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
+          <Button onClick={handleSave} loading={saving}>{editingId ? "Save Changes" : "Create"}</Button>
+        </div>
+      </Modal>
+
+      <ConfirmDialog open={showDelete} onClose={() => { setShowDelete(false); setDeleteId(null); }} onConfirm={handleDelete}
+        title="Delete Organization" message="This will permanently delete this organization. This cannot be undone." confirmLabel="Delete" loading={saving} />
+    </>
   );
 }
