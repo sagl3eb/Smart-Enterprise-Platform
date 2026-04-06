@@ -46,6 +46,56 @@ async function getFeatureImportance(req: AuthenticatedRequest, res: Response): P
   }
 }
 
+async function getModelComparison(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getModelComparison();
+    sendSuccess(res, result, "Model comparison retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function getConfusionMatrix(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getConfusionMatrix();
+    sendSuccess(res, result, "Confusion matrix retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function getRocCurve(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getRocCurve();
+    sendSuccess(res, result, "ROC curve retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function getDepartmentRisks(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getDepartmentRisks();
+    sendSuccess(res, result, "Department risks retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function getTrainingHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getTrainingHistory();
+    sendSuccess(res, result, "Training history retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
 async function forecast(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const result = await predictiveService.forecast(req.body);
@@ -100,6 +150,7 @@ async function getHealth(req: AuthenticatedRequest, res: Response): Promise<void
 
 const predictiveController = {
   trainAttrition, predictAttrition, batchPredictAttrition, getFeatureImportance,
+  getModelComparison, getConfusionMatrix, getRocCurve, getDepartmentRisks, getTrainingHistory,
   forecast, getSampleData,
   detectAnomalies,
   getModels, getHealth,

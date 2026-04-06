@@ -1,5 +1,6 @@
 import prisma from "./client";
 import bcrypt from "bcrypt";
+import { chatbotIntents } from "./chatbot-intents-seed";
 
 const SALT_ROUNDS = 12;
 
@@ -135,6 +136,29 @@ async function main() {
     });
   }
   console.log(`  ${leaveTypes.length} leave types seeded`);
+
+  // ── Chatbot Intents ───────────────────────────────────────
+  for (const intent of chatbotIntents) {
+    await prisma.chatbotIntent.upsert({
+      where: { intentName: intent.intentName },
+      update: {
+        patterns: intent.patterns,
+        responseType: intent.responseType,
+        responseData: intent.responseData,
+        priority: intent.priority,
+        isActive: intent.isActive,
+      },
+      create: {
+        intentName: intent.intentName,
+        patterns: intent.patterns,
+        responseType: intent.responseType,
+        responseData: intent.responseData,
+        priority: intent.priority,
+        isActive: intent.isActive,
+      },
+    });
+  }
+  console.log(`  ${chatbotIntents.length} chatbot intents seeded`);
 
   console.log("\nSeed completed successfully!");
   console.log(`\nDefault login: ${adminEmail} / admin123456`);

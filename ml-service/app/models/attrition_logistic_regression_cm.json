@@ -1,0 +1,20 @@
+{
+  "matrix": [
+    [
+      3302,
+      1387
+    ],
+    [
+      1191,
+      3060
+    ]
+  ],
+  "labels": [
+    "Stayed",
+    "Left"
+  ],
+  "true_negatives": 3302,
+  "false_positives": 1387,
+  "false_negatives": 1191,
+  "true_positives": 3060
+}

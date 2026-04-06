@@ -15,7 +15,7 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ./database/schema_full.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sep_admin}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sep_admin} -d ${POSTGRES_DB:-smart_enterprise}"]
       interval: 10s
       timeout: 5s
       retries: 5

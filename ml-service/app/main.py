@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(attrition.router, prefix="/predict", tags=["Attrition"])
+app.include_router(attrition.router)
 app.include_router(forecasting.router, prefix="/predict", tags=["Forecasting"])
 app.include_router(anomaly.router, prefix="/predict", tags=["Anomaly Detection"])
 app.include_router(health.router, prefix="/models", tags=["Models"])

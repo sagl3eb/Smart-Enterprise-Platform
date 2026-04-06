@@ -13,6 +13,11 @@ router.post("/attrition/train", authenticate, predictiveController.trainAttritio
 router.post("/attrition/predict", authenticate, predictiveController.predictAttrition);
 router.post("/attrition/batch", authenticate, predictiveController.batchPredictAttrition);
 router.get("/attrition/feature-importance", authenticate, predictiveController.getFeatureImportance);
+router.get("/attrition/models/comparison", authenticate, predictiveController.getModelComparison);
+router.get("/attrition/confusion-matrix", authenticate, predictiveController.getConfusionMatrix);
+router.get("/attrition/roc-curve", authenticate, predictiveController.getRocCurve);
+router.get("/attrition/department-risks", authenticate, predictiveController.getDepartmentRisks);
+router.get("/attrition/training-history", authenticate, predictiveController.getTrainingHistory);
 
 // Forecasting
 router.post("/forecast", authenticate, predictiveController.forecast);

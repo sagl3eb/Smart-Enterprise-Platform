@@ -62,6 +62,7 @@ class ForecastResponse(BaseModel):
     metric: str
     forecast: List[ForecastPoint]
     model_info: dict
+    accuracy_metrics: Optional[dict] = None
 
 
 # ─── ANOMALY DETECTION ──────────────────────────────────────

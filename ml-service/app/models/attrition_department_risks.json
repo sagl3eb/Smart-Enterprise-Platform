@@ -1,0 +1,50 @@
+{
+  "departments": [
+    {
+      "name": "Education",
+      "total_employees": 12490,
+      "attrition_count": 6085,
+      "attrition_rate": 0.4872,
+      "risk_level": "high",
+      "avg_satisfaction": 2.82,
+      "avg_income": 4499.0
+    },
+    {
+      "name": "Media",
+      "total_employees": 9574,
+      "attrition_count": 4542,
+      "attrition_rate": 0.4744,
+      "risk_level": "high",
+      "avg_satisfaction": 2.81,
+      "avg_income": 5992.0
+    },
+    {
+      "name": "Healthcare",
+      "total_employees": 13642,
+      "attrition_count": 6454,
+      "attrition_rate": 0.4731,
+      "risk_level": "high",
+      "avg_satisfaction": 2.8,
+      "avg_income": 8001.0
+    },
+    {
+      "name": "Technology",
+      "total_employees": 15507,
+      "attrition_count": 7333,
+      "attrition_rate": 0.4729,
+      "risk_level": "high",
+      "avg_satisfaction": 2.8,
+      "avg_income": 9109.0
+    },
+    {
+      "name": "Finance",
+      "total_employees": 8385,
+      "attrition_count": 3924,
+      "attrition_rate": 0.468,
+      "risk_level": "high",
+      "avg_satisfaction": 2.79,
+      "avg_income": 8498.0
+    }
+  ],
+  "overall_attrition_rate": 0.475485754555522
+}

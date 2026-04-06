@@ -1,21 +1,22 @@
 @echo off
-title SEP - Smart Enterprise Platform Launcher
+title SEP Platform Launcher
 color 0A
 
 echo ============================================================
-echo    SEP - Smart Enterprise Platform | One-Click Launcher
+echo    SEP - Smart Enterprise Platform Launcher
 echo    Student: Saqqaf Al-Yazidi (TP075880)
 echo ============================================================
 echo.
 
 REM ---- Configuration ----
-set PROJECT_ROOT=%~dp0
-set BACKEND_DIR=%PROJECT_ROOT%backend
-set FRONTEND_DIR=%PROJECT_ROOT%frontend
-set ML_DIR=%PROJECT_ROOT%ml-service
+set "PROJECT_ROOT=%~dp0"
+set "BACKEND_DIR=%PROJECT_ROOT%backend"
+set "FRONTEND_DIR=%PROJECT_ROOT%frontend"
+set "ML_DIR=%PROJECT_ROOT%ml-service"
 
 REM ---- Step 1: Start PostgreSQL via Docker ----
 echo [1/6] Starting PostgreSQL database...
+cd /d "%PROJECT_ROOT%"
 docker-compose up postgres -d 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Docker failed. Make sure Docker Desktop is running.
@@ -73,10 +74,13 @@ cd /d "%ML_DIR%"
 pip show fastapi >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo       Installing ML service dependencies...
-    pip install -r requirements.txt --break-system-packages 2>nul || pip install -r requirements.txt
+    pip install -r requirements.txt 2>nul
 )
 echo       Generating ML training data...
-py -m app.data.generate_data 2>nul || python -m app.data.generate_data 2>nul
+py -m app.data.generate_data 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    python -m app.data.generate_data 2>nul
+)
 echo       ML data ready!
 echo.
 
@@ -84,20 +88,16 @@ REM ---- Step 6: Launch all services in separate windows ----
 echo [6/6] Launching all services...
 echo.
 
-REM Start Backend
 cd /d "%BACKEND_DIR%"
-start "SEP Backend (port 3000)" cmd /k "color 0E && echo === SEP BACKEND === && npm run dev"
+start "SEP-Backend" cmd /k "echo === SEP BACKEND on port 3000 === && npm run dev"
 
-REM Wait a moment for backend to initialize
 timeout /t 3 /nobreak >nul
 
-REM Start ML Service
 cd /d "%ML_DIR%"
-start "SEP ML Service (port 8000)" cmd /k "color 0D && echo === SEP ML SERVICE === && py -m uvicorn app.main:app --reload --port 8000 2>nul || python -m uvicorn app.main:app --reload --port 8000"
+start "SEP-ML" cmd /k "echo === SEP ML SERVICE on port 8000 === && py -m uvicorn app.main:app --reload --port 8000"
 
-REM Start Frontend
 cd /d "%FRONTEND_DIR%"
-start "SEP Frontend (port 5173)" cmd /k "color 0B && echo === SEP FRONTEND === && npm run dev"
+start "SEP-Frontend" cmd /k "echo === SEP FRONTEND on port 5173 === && npm run dev"
 
 echo.
 echo ============================================================
@@ -110,9 +110,7 @@ echo    PostgreSQL:  localhost:5432
 echo.
 echo    Login: admin@sep.com / admin123456
 echo.
-echo    Close this window when done. To stop everything:
-echo    1. Close the 3 service windows
-echo    2. Run: docker-compose down
+echo    To stop: close the 3 service windows, then run stop-sep.bat
 echo ============================================================
 echo.
 pause

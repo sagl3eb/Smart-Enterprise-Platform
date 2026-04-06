@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2026-04-06T08:57:11.711169",
+    "dataset_rows": 59598,
+    "features": 22,
+    "training_time_seconds": 372.3,
+    "models_trained": [
+      "random_forest",
+      "gradient_boosting",
+      "logistic_regression"
+    ],
+    "results": {
+      "random_forest": {
+        "accuracy": 0.7354586129753915,
+        "f1": 0.7214041701024856,
+        "auc_roc": 0.8273307814768309
+      },
+      "gradient_boosting": {
+        "accuracy": 0.7337807606263982,
+        "f1": 0.7188090737240076,
+        "auc_roc": 0.8250617733792293
+      },
+      "logistic_regression": {
+        "accuracy": 0.7116331096196868,
+        "f1": 0.7036100252931708,
+        "auc_roc": 0.7976961651264773
+      }
+    }
+  }
+]

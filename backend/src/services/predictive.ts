@@ -48,6 +48,26 @@ async function getFeatureImportance() {
   return proxyToML("GET", "/predict/attrition/feature-importance");
 }
 
+async function getModelComparison() {
+  return proxyToML("GET", "/predict/attrition/models/comparison");
+}
+
+async function getConfusionMatrix() {
+  return proxyToML("GET", "/predict/attrition/confusion-matrix");
+}
+
+async function getRocCurve() {
+  return proxyToML("GET", "/predict/attrition/roc-curve");
+}
+
+async function getDepartmentRisks() {
+  return proxyToML("GET", "/predict/attrition/department-risks");
+}
+
+async function getTrainingHistory() {
+  return proxyToML("GET", "/predict/attrition/training-history");
+}
+
 // ─── Forecasting ───────────────────────────────────────────
 
 async function forecast(data: {
@@ -84,6 +104,7 @@ async function getHealth() {
 
 const predictiveService = {
   trainAttrition, predictAttrition, batchPredictAttrition, getFeatureImportance,
+  getModelComparison, getConfusionMatrix, getRocCurve, getDepartmentRisks, getTrainingHistory,
   forecast, getSampleData,
   detectAnomalies,
   getModels, getHealth,

@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 MODEL_DIR = os.getenv("MODEL_DIR", os.path.join(os.path.dirname(__file__), "..", "models"))
 
@@ -71,6 +72,12 @@ def _forecast_prophet(metric: str, df: pd.DataFrame, forecast_days: int) -> Dict
             "upper_bound": round(float(row["yhat_upper"]), 2),
         })
 
+    # 80/20 validation split for accuracy metrics
+    split_idx = int(len(df) * 0.8)
+    val_actuals = df["y"].values[split_idx:]
+    val_predictions = in_sample["yhat"].values[split_idx:len(df)]
+    accuracy_metrics = compute_accuracy_metrics(val_actuals.tolist(), val_predictions.tolist())
+
     return {
         "metric": metric,
         "forecast": forecast_points,
@@ -81,8 +88,49 @@ def _forecast_prophet(metric: str, df: pd.DataFrame, forecast_days: int) -> Dict
             "forecast_days": forecast_days,
             "metrics": _metrics,
         },
+        "accuracy_metrics": accuracy_metrics,
     }
 
+def compute_accuracy_metrics(actual: list, predicted: list) -> dict:
+    """
+    Compute forecast accuracy metrics: MAPE, RMSE, MAE, R².
+    These are shown on the frontend so users can assess forecast reliability.
+    """
+    actual = np.array(actual, dtype=float)
+    predicted = np.array(predicted, dtype=float)
+    
+    # Remove zero/nan values for MAPE calculation
+    mask = (actual != 0) & ~np.isnan(actual) & ~np.isnan(predicted)
+    actual_clean = actual[mask]
+    predicted_clean = predicted[mask]
+    
+    if len(actual_clean) == 0:
+        return {'mape': None, 'rmse': None, 'mae': None, 'r_squared': None}
+    
+    # MAPE - Mean Absolute Percentage Error
+    mape = float(np.mean(np.abs((actual_clean - predicted_clean) / actual_clean)) * 100)
+    
+    # RMSE - Root Mean Squared Error
+    rmse = float(np.sqrt(mean_squared_error(actual_clean, predicted_clean)))
+    
+    # MAE - Mean Absolute Error
+    mae = float(mean_absolute_error(actual_clean, predicted_clean))
+    
+    # R² - Coefficient of Determination
+    ss_res = np.sum((actual_clean - predicted_clean) ** 2)
+    ss_tot = np.sum((actual_clean - np.mean(actual_clean)) ** 2)
+    r_squared = float(1 - (ss_res / ss_tot)) if ss_tot != 0 else 0.0
+    
+    return {
+        'mape': round(mape, 2),           # Lower is better, < 10% is excellent
+        'rmse': round(rmse, 2),            # Lower is better
+        'mae': round(mae, 2),             # Lower is better
+        'r_squared': round(r_squared, 4),  # Closer to 1.0 is better
+        'interpretation': {
+            'mape_quality': 'Excellent' if mape < 10 else ('Good' if mape < 20 else ('Fair' if mape < 30 else 'Poor')),
+            'r_squared_quality': 'Excellent' if r_squared > 0.9 else ('Good' if r_squared > 0.7 else ('Fair' if r_squared > 0.5 else 'Poor'))
+        }
+    }
 
 def _forecast_fallback(metric: str, df: pd.DataFrame, forecast_days: int) -> Dict:
     """Simple linear regression fallback when Prophet is not available."""
@@ -110,6 +158,12 @@ def _forecast_fallback(metric: str, df: pd.DataFrame, forecast_days: int) -> Dic
     _version = f"1.0.{int(datetime.now().timestamp()) % 10000}"
     _trained_at = datetime.now().isoformat()
 
+    # 80/20 validation split for accuracy metrics
+    split_idx = int(len(x) * 0.8)
+    val_actuals = y[split_idx:]
+    val_predictions = predictions[split_idx:]
+    accuracy_metrics = compute_accuracy_metrics(val_actuals.tolist(), val_predictions.tolist())
+
     last_date = df["ds"].max()
     forecast_points = []
     for i in range(1, forecast_days + 1):
@@ -133,6 +187,7 @@ def _forecast_fallback(metric: str, df: pd.DataFrame, forecast_days: int) -> Dic
             "forecast_days": forecast_days,
             "metrics": _metrics,
         },
+        "accuracy_metrics": accuracy_metrics,
     }
 
 

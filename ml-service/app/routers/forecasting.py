@@ -19,6 +19,7 @@ async def predict_forecast(request: ForecastRequest):
             metric=result["metric"],
             forecast=result["forecast"],
             model_info=result["model_info"],
+            accuracy_metrics=result.get("accuracy_metrics"),
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

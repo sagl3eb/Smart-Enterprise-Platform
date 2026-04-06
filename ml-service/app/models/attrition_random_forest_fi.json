@@ -1,0 +1,92 @@
+{
+  "features": [
+    "job_level",
+    "marital_status",
+    "distance_from_home",
+    "monthly_income",
+    "company_tenure",
+    "remote_work",
+    "years_at_company",
+    "age",
+    "work_life_balance",
+    "num_dependents",
+    "education_level",
+    "num_promotions",
+    "company_reputation",
+    "job_role",
+    "job_satisfaction",
+    "employee_recognition",
+    "performance_rating",
+    "company_size",
+    "gender",
+    "overtime",
+    "innovation_opportunities",
+    "leadership_opportunities"
+  ],
+  "importances": [
+    0.1269180556865769,
+    0.10699770940827906,
+    0.07847550869750468,
+    0.07148384573883088,
+    0.06744136549442842,
+    0.06239654373979589,
+    0.061996268738284746,
+    0.06175762095767398,
+    0.06125112403036214,
+    0.040004763856834796,
+    0.03782113936505377,
+    0.03670196728650436,
+    0.03140581283050469,
+    0.026568851620789966,
+    0.024227980189627848,
+    0.022894690549489435,
+    0.020933815721211207,
+    0.01876618951861518,
+    0.018182077110206515,
+    0.012273884615179434,
+    0.008271873379865903,
+    0.0032289114643800957
+  ],
+  "top_10": [
+    {
+      "feature": "job_level",
+      "importance": 0.1269
+    },
+    {
+      "feature": "marital_status",
+      "importance": 0.107
+    },
+    {
+      "feature": "distance_from_home",
+      "importance": 0.0785
+    },
+    {
+      "feature": "monthly_income",
+      "importance": 0.0715
+    },
+    {
+      "feature": "company_tenure",
+      "importance": 0.0674
+    },
+    {
+      "feature": "remote_work",
+      "importance": 0.0624
+    },
+    {
+      "feature": "years_at_company",
+      "importance": 0.062
+    },
+    {
+      "feature": "age",
+      "importance": 0.0618
+    },
+    {
+      "feature": "work_life_balance",
+      "importance": 0.0613
+    },
+    {
+      "feature": "num_dependents",
+      "importance": 0.04
+    }
+  ]
+}
