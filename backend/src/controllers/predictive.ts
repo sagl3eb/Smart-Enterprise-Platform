@@ -148,11 +148,73 @@ async function getHealth(req: AuthenticatedRequest, res: Response): Promise<void
   }
 }
 
+async function trainEquipment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.trainEquipment();
+    sendSuccess(res, result, "Equipment model trained");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Training failed", err.statusCode || 500);
+  }
+}
+
+async function predictEquipment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.predictEquipment(req.body);
+    sendSuccess(res, result, "Equipment prediction complete");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Prediction failed", err.statusCode || 500);
+  }
+}
+
+async function batchPredictEquipment(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.batchPredictEquipment(req.body.assets || []);
+    sendSuccess(res, result, "Batch equipment prediction complete");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function getEquipmentSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.getEquipmentSummary();
+    sendSuccess(res, result, "Equipment summary retrieved");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function forecastBudgetVariance(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.forecastBudgetVariance(req.body);
+    sendSuccess(res, result, "Budget variance forecast generated");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
+async function forecastProjectTimeline(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const result = await predictiveService.forecastProjectTimeline(req.body);
+    sendSuccess(res, result, "Project timeline predicted");
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    sendError(res, err.message || "Failed", err.statusCode || 500);
+  }
+}
+
 const predictiveController = {
   trainAttrition, predictAttrition, batchPredictAttrition, getFeatureImportance,
   getModelComparison, getConfusionMatrix, getRocCurve, getDepartmentRisks, getTrainingHistory,
   forecast, getSampleData,
   detectAnomalies,
+  trainEquipment, predictEquipment, batchPredictEquipment, getEquipmentSummary,
+  forecastBudgetVariance, forecastProjectTimeline,
   getModels, getHealth,
 };
 

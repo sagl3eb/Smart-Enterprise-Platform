@@ -5,7 +5,7 @@ from app.services import anomaly_model
 router = APIRouter()
 
 
-@router.post("/anomaly", response_model=AnomalyResponse)
+@router.post("/anomaly/detect", response_model=AnomalyResponse)
 async def detect_anomalies(request: AnomalyRequest):
     """Detect anomalies in time series data."""
     try:

@@ -86,10 +86,38 @@ async function getSampleData(metric: string, days: number = 365) {
 
 async function detectAnomalies(data: {
   metric: string;
-  data_points: Array<{ timestamp: string; value: number }>;
+  data: Array<{ timestamp: string; value: number }>;
   contamination?: number;
 }) {
   return proxyToML("POST", "/predict/anomaly/detect", data);
+}
+
+// ─── Equipment ────────────────────────────────────────────
+
+async function trainEquipment() {
+  return proxyToML("POST", "/predict/equipment/train");
+}
+
+async function predictEquipment(data: Record<string, unknown>) {
+  return proxyToML("POST", "/predict/equipment/predict", data);
+}
+
+async function batchPredictEquipment(assets: Array<Record<string, unknown>>) {
+  return proxyToML("POST", "/predict/equipment/batch", { assets });
+}
+
+async function getEquipmentSummary() {
+  return proxyToML("GET", "/predict/equipment/summary");
+}
+
+// ─── Forecasting — Budget Variance & Project Timeline ─────
+
+async function forecastBudgetVariance(data: unknown) {
+  return proxyToML("POST", "/predict/forecast/budget-variance", data);
+}
+
+async function forecastProjectTimeline(data: unknown) {
+  return proxyToML("POST", "/predict/forecast/project-timeline", data);
 }
 
 // ─── Models & Health ───────────────────────────────────────
@@ -107,6 +135,8 @@ const predictiveService = {
   getModelComparison, getConfusionMatrix, getRocCurve, getDepartmentRisks, getTrainingHistory,
   forecast, getSampleData,
   detectAnomalies,
+  trainEquipment, predictEquipment, batchPredictEquipment, getEquipmentSummary,
+  forecastBudgetVariance, forecastProjectTimeline,
   getModels, getHealth,
 };
 

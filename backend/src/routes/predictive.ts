@@ -22,6 +22,14 @@ router.get("/attrition/training-history", authenticate, predictiveController.get
 // Forecasting
 router.post("/forecast", authenticate, predictiveController.forecast);
 router.get("/forecast/sample/:metric", authenticate, predictiveController.getSampleData);
+router.post("/forecast/budget-variance", authenticate, predictiveController.forecastBudgetVariance);
+router.post("/forecast/project-timeline", authenticate, predictiveController.forecastProjectTimeline);
+
+// Equipment
+router.post("/equipment/train", authenticate, predictiveController.trainEquipment);
+router.post("/equipment/predict", authenticate, predictiveController.predictEquipment);
+router.post("/equipment/batch", authenticate, predictiveController.batchPredictEquipment);
+router.get("/equipment/summary", authenticate, predictiveController.getEquipmentSummary);
 
 // Anomaly
 router.post("/anomaly/detect", authenticate, predictiveController.detectAnomalies);

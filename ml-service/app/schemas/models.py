@@ -46,7 +46,7 @@ class HistoricalDataPoint(BaseModel):
 
 
 class ForecastRequest(BaseModel):
-    metric: str = Field(..., description="Metric name: revenue, headcount, budget_utilization, project_completion")
+    metric: str = Field(..., description="Metric name: revenue, headcount, budget_utilization, project_completion, resource_demand, ticket_volume, system_metrics")
     historical_data: List[HistoricalDataPoint] = Field(..., min_length=30, description="At least 30 data points")
     forecast_days: int = Field(default=90, ge=7, le=365, description="Days to forecast")
 
@@ -63,6 +63,29 @@ class ForecastResponse(BaseModel):
     forecast: List[ForecastPoint]
     model_info: dict
     accuracy_metrics: Optional[dict] = None
+
+
+# ─── BUDGET VARIANCE ───────────────────────────────────────
+
+class DepartmentBudget(BaseModel):
+    department: str
+    allocated: float = Field(..., gt=0)
+    spent_to_date: float = Field(..., ge=0)
+    months_elapsed: int = Field(..., ge=1)
+    total_months: int = Field(..., ge=1)
+
+
+class BudgetVarianceRequest(BaseModel):
+    department_budgets: List[DepartmentBudget]
+
+
+# ─── PROJECT TIMELINE ──────────────────────────────────────
+
+class ProjectTimelineRequest(BaseModel):
+    progress_pct: float = Field(..., ge=0, le=100, description="Current progress percentage")
+    start_date: str = Field(..., description="Project start date (YYYY-MM-DD)")
+    expected_end_date: str = Field(..., description="Expected end date (YYYY-MM-DD)")
+    days_elapsed: int = Field(..., ge=1, description="Days elapsed since start")
 
 
 # ─── ANOMALY DETECTION ──────────────────────────────────────

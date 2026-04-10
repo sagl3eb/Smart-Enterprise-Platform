@@ -204,6 +204,111 @@ def get_model_info() -> Dict:
     }
 
 
+def predict_budget_variance(department_budgets: List[Dict]) -> Dict:
+    """Predict budget variance for each department using linear projection."""
+    departments = []
+    total_at_risk = 0
+
+    for dept in department_budgets:
+        name = dept["department"]
+        allocated = dept["allocated"]
+        spent = dept["spent_to_date"]
+        months_elapsed = dept["months_elapsed"]
+        total_months = dept["total_months"]
+
+        # Linear projection: monthly burn rate extrapolated to full period
+        if months_elapsed > 0:
+            monthly_rate = spent / months_elapsed
+            predicted_spending = round(monthly_rate * total_months, 2)
+        else:
+            predicted_spending = 0.0
+
+        predicted_variance = round(predicted_spending - allocated, 2)
+        variance_pct = round((predicted_variance / allocated) * 100, 2) if allocated else 0.0
+
+        if variance_pct > 5:
+            risk_level = "over_budget"
+            total_at_risk += 1
+        elif variance_pct < -5:
+            risk_level = "under_budget"
+        else:
+            risk_level = "on_track"
+
+        departments.append({
+            "department": name,
+            "allocated": allocated,
+            "predicted_spending": predicted_spending,
+            "predicted_variance": predicted_variance,
+            "variance_pct": variance_pct,
+            "risk_level": risk_level,
+        })
+
+    return {
+        "departments": departments,
+        "summary": {
+            "total_at_risk": total_at_risk,
+            "total_departments": len(departments),
+        },
+    }
+
+
+def generate_sample_budget_data() -> List[Dict]:
+    """Return sample budget data for 6 departments for testing."""
+    return [
+        {"department": "Engineering", "allocated": 500000, "spent_to_date": 280000, "months_elapsed": 6, "total_months": 12},
+        {"department": "Marketing", "allocated": 200000, "spent_to_date": 130000, "months_elapsed": 6, "total_months": 12},
+        {"department": "HR", "allocated": 150000, "spent_to_date": 70000, "months_elapsed": 6, "total_months": 12},
+        {"department": "Sales", "allocated": 300000, "spent_to_date": 180000, "months_elapsed": 6, "total_months": 12},
+        {"department": "Operations", "allocated": 250000, "spent_to_date": 160000, "months_elapsed": 6, "total_months": 12},
+        {"department": "Finance", "allocated": 100000, "spent_to_date": 45000, "months_elapsed": 6, "total_months": 12},
+    ]
+
+
+def predict_project_timeline(progress_pct: float, start_date: str, expected_end_date: str, days_elapsed: int) -> Dict:
+    """Predict project completion date based on current velocity."""
+    from datetime import datetime, timedelta
+
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    expected_end_dt = datetime.strptime(expected_end_date, "%Y-%m-%d")
+    total_planned_days = (expected_end_dt - start_dt).days
+
+    # Current velocity: percent completed per day
+    velocity_per_day = progress_pct / days_elapsed if days_elapsed > 0 else 0.0
+    remaining_pct = 100.0 - progress_pct
+
+    # Required velocity to finish on time
+    remaining_planned_days = total_planned_days - days_elapsed
+    required_velocity = remaining_pct / remaining_planned_days if remaining_planned_days > 0 else float("inf")
+
+    # Predicted days to complete remaining work
+    if velocity_per_day > 0:
+        days_to_complete = remaining_pct / velocity_per_day
+        predicted_end_dt = start_dt + timedelta(days=days_elapsed + days_to_complete)
+    else:
+        # No progress: can't predict
+        predicted_end_dt = expected_end_dt + timedelta(days=365)
+        days_to_complete = 365 + remaining_planned_days
+
+    days_delay = round((predicted_end_dt - expected_end_dt).total_seconds() / 86400, 1)
+    on_track = days_delay <= 0
+
+    # Confidence based on how close velocity is to required
+    if required_velocity > 0 and velocity_per_day > 0:
+        ratio = velocity_per_day / required_velocity
+        confidence = round(min(ratio, 1.0) * 100, 1)
+    else:
+        confidence = 0.0
+
+    return {
+        "predicted_end_date": predicted_end_dt.strftime("%Y-%m-%d"),
+        "days_delay": days_delay,
+        "on_track": on_track,
+        "confidence": confidence,
+        "velocity_per_day": round(velocity_per_day, 4),
+        "required_velocity": round(required_velocity, 4),
+    }
+
+
 def generate_sample_historical_data(metric: str, days: int = 730) -> List[Dict]:
     """Generate 2 years of synthetic daily data for a metric."""
     np.random.seed(hash(metric) % 2**31)
@@ -232,6 +337,40 @@ def generate_sample_historical_data(metric: str, days: int = 730) -> List[Dict]:
         trend = np.linspace(0, 10, days)
         noise = np.random.normal(0, 5, days)
         values = (base + trend + noise).clip(0, 100)
+    elif metric == "resource_demand":
+        base = 25
+        # Weekday/weekend pattern: +5 weekdays, -5 weekends
+        day_of_week = np.array([dates[i].weekday() for i in range(days)])
+        weekday_effect = np.where(day_of_week < 5, 5, -5)
+        # Seasonal peaks in Q4 (Oct-Dec) and Q1 (Jan-Mar)
+        month = np.array([dates[i].month for i in range(days)])
+        seasonal = np.where((month >= 10) | (month <= 3), 8, 0)
+        noise = np.random.normal(0, 2, days)
+        values = (base + weekday_effect + seasonal + noise).clip(min=0)
+        values = np.round(values)
+    elif metric == "ticket_volume":
+        base = 15
+        trend = np.linspace(0, 5, days)
+        # Weekday spikes
+        day_of_week = np.array([dates[i].weekday() for i in range(days)])
+        weekday_effect = np.where(day_of_week < 5, 8, -3)
+        # Monday spikes (backlog from weekend)
+        monday_spike = np.where(day_of_week == 0, 5, 0)
+        noise = np.random.normal(0, 3, days)
+        values = (base + trend + weekday_effect + monday_spike + noise).clip(min=0)
+        values = np.round(values)
+    elif metric == "system_metrics":
+        base = 50  # CPU/memory utilization %
+        trend = np.linspace(0, 10, days)
+        # Daily pattern: higher during business hours (simulated as weekday)
+        day_of_week = np.array([dates[i].weekday() for i in range(days)])
+        weekday_effect = np.where(day_of_week < 5, 15, -5)
+        # Occasional spikes (simulating deployments, incidents)
+        spikes = np.zeros(days)
+        spike_indices = np.random.choice(days, size=int(days * 0.03), replace=False)
+        spikes[spike_indices] = np.random.uniform(15, 35, len(spike_indices))
+        noise = np.random.normal(0, 4, days)
+        values = (base + trend + weekday_effect + spikes + noise).clip(0, 100)
     else:
         base = 100
         trend = np.linspace(0, 20, days)

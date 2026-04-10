@@ -5,12 +5,14 @@ import { BarChartWidget, LineChartWidget, AreaChartWidget } from "../../componen
 import {
   Brain, Trophy, RefreshCw, TrendingUp, BarChart3,
   AlertTriangle, Building2, Activity, Target, Zap, Clock,
+  Search, ShieldCheck, UserCheck,
 } from "lucide-react";
 import { formatNumber, formatPercent } from "../../utils/formatters";
 import api, { mlApi } from "../../api/client";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   LineChart, Line, AreaChart, Area, ResponsiveContainer, Cell,
+  ScatterChart, Scatter, ZAxis,
 } from "recharts";
 
 // ─── Types ────────────────────────────────────────────────────
@@ -80,6 +82,28 @@ interface ForecastAccuracy {
   interpretation: { mape_quality: string; r_squared_quality: string };
 }
 
+interface AnomalyPoint {
+  timestamp: string;
+  value: number;
+  is_anomaly: boolean;
+  anomaly_score?: number;
+}
+
+interface AnomalyResult {
+  total_points: number;
+  anomaly_count: number;
+  anomaly_rate: number;
+  results: AnomalyPoint[];
+}
+
+interface HumanOverride {
+  id: string;
+  model: string;
+  originalRisk: string;
+  overrideRisk: string;
+  timestamp: string;
+}
+
 // ─── Theme constants ──────────────────────────────────────────
 
 const MODEL_COLORS: Record<string, string> = {
@@ -113,7 +137,7 @@ const AXIS_TICK = { fontSize: 11, fill: "#9B93B8" };
 // ─── Component ────────────────────────────────────────────────
 
 export default function PredictiveAnalytics() {
-  const [activeTab, setActiveTab] = useState<"models" | "forecasting" | "departments">("models");
+  const [activeTab, setActiveTab] = useState<"models" | "forecasting" | "departments" | "anomaly">("models");
   const [comparison, setComparison] = useState<ModelComparison | null>(null);
   const [departmentRisks, setDepartmentRisks] = useState<{ departments: DepartmentRisk[]; overall_attrition_rate: number } | null>(null);
   const [isTraining, setIsTraining] = useState(false);
@@ -124,6 +148,20 @@ export default function PredictiveAnalytics() {
   const [forecastAccuracy, setForecastAccuracy] = useState<ForecastAccuracy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Anomaly detection state
+  const [anomalyResult, setAnomalyResult] = useState<AnomalyResult | null>(null);
+  const [anomalyLoading, setAnomalyLoading] = useState(false);
+  const [anomalyMetric, setAnomalyMetric] = useState("system_metrics");
+
+  // Human override state
+  const [overrides, setOverrides] = useState<Record<string, HumanOverride>>(() => {
+    try {
+      const stored = localStorage.getItem("sep_overrides");
+      return stored ? JSON.parse(stored) : {};
+    } catch { return {}; }
+  });
+  const [overrideDropdown, setOverrideDropdown] = useState<string | null>(null);
 
   // ─── Data Loading ─────────────────────────────────────────
 
@@ -210,6 +248,51 @@ export default function PredictiveAnalytics() {
     }
   };
 
+  const handleAnomalyDetection = async () => {
+    setAnomalyLoading(true);
+    setError(null);
+    try {
+      // Get sample data for the metric
+      const sampleRes = await mlApi.get(`/predict/forecast/sample/${anomalyMetric}`);
+      const rawData = sampleRes.data.data?.data || sampleRes.data.data || sampleRes.data;
+
+      const dataPoints = (Array.isArray(rawData) ? rawData : []).map((d: any) => ({
+        timestamp: d.date || d.timestamp,
+        value: d.value,
+      }));
+
+      const result = await mlApi.post("/predict/anomaly/detect", {
+        metric: anomalyMetric,
+        data: dataPoints.slice(-200), // last 200 points
+        contamination: 0.05,
+      });
+
+      const data = result.data.data ?? result.data;
+      setAnomalyResult(data);
+    } catch (err: any) {
+      setError(`Anomaly detection failed: ${err.message}`);
+    } finally {
+      setAnomalyLoading(false);
+    }
+  };
+
+  const saveOverride = (key: string, model: string, originalRisk: string, newRisk: string) => {
+    const updated = {
+      ...overrides,
+      [key]: { id: key, model, originalRisk, overrideRisk: newRisk, timestamp: new Date().toISOString() },
+    };
+    setOverrides(updated);
+    localStorage.setItem("sep_overrides", JSON.stringify(updated));
+    setOverrideDropdown(null);
+  };
+
+  const removeOverride = (key: string) => {
+    const updated = { ...overrides };
+    delete updated[key];
+    setOverrides(updated);
+    localStorage.setItem("sep_overrides", JSON.stringify(updated));
+  };
+
   // ─── Loading state ────────────────────────────────────────
 
   if (loading) {
@@ -222,40 +305,102 @@ export default function PredictiveAnalytics() {
 
   // ─── Sub-renders ──────────────────────────────────────────
 
-  const renderMetricsCard = (name: string, metrics: ModelMetrics, isBest: boolean) => (
-    <Card key={name} className={isBest ? "ring-2 ring-[#5B21B6]/30" : ""}>
-      <CardBody>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: MODEL_COLORS[name] }} />
-            <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">
-              {MODEL_LABELS[name] || name}
-            </h3>
-          </div>
-          {isBest && <Badge variant="purple">Best Model</Badge>}
-        </div>
-        <p className="text-xs text-[#9B93B8] mb-4">Trained in {metrics.training_time}s</p>
-
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: "Accuracy", value: metrics.accuracy },
-            { label: "Precision", value: metrics.precision },
-            { label: "Recall", value: metrics.recall },
-            { label: "F1 Score", value: metrics.f1_score },
-            { label: "AUC-ROC", value: metrics.auc_roc },
-            { label: "CV Accuracy", value: metrics.cv_accuracy_mean },
-          ].map(({ label, value }) => (
-            <div key={label} className="text-center p-2 rounded-[10px] bg-[#F8F7FF] dark:bg-[#1E1B2E]">
-              <p className="text-[10px] text-[#9B93B8] uppercase tracking-wide">{label}</p>
-              <p className="text-lg font-bold text-[#1E1B2E] dark:text-[#EDE9FE] font-serif">
-                {value ? `${(value * 100).toFixed(1)}%` : "N/A"}
-              </p>
+  const renderMetricsCard = (name: string, metrics: ModelMetrics, isBest: boolean) => {
+    const overrideKey = `model_${name}`;
+    const override = overrides[overrideKey];
+    return (
+      <Card key={name} className={isBest ? "ring-2 ring-[#5B21B6]/30" : ""}>
+        <CardBody>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: MODEL_COLORS[name] }} />
+              <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">
+                {MODEL_LABELS[name] || name}
+              </h3>
             </div>
-          ))}
-        </div>
-      </CardBody>
-    </Card>
-  );
+            <div className="flex items-center gap-1.5">
+              {override && (
+                <Badge variant="purple">
+                  <ShieldCheck size={10} className="inline mr-0.5" />
+                  {override.overrideRisk === "accept" ? "Accepted" : `Override: ${override.overrideRisk}`}
+                </Badge>
+              )}
+              {isBest && <Badge variant="purple">Best Model</Badge>}
+            </div>
+          </div>
+          <p className="text-xs text-[#9B93B8] mb-4">Trained in {metrics.training_time}s</p>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Accuracy", value: metrics.accuracy },
+              { label: "Precision", value: metrics.precision },
+              { label: "Recall", value: metrics.recall },
+              { label: "F1 Score", value: metrics.f1_score },
+              { label: "AUC-ROC", value: metrics.auc_roc },
+              { label: "CV Accuracy", value: metrics.cv_accuracy_mean },
+            ].map(({ label, value }) => (
+              <div key={label} className="text-center p-2 rounded-[10px] bg-[#F8F7FF] dark:bg-[#1E1B2E]">
+                <p className="text-[10px] text-[#9B93B8] uppercase tracking-wide">{label}</p>
+                <p className="text-lg font-bold text-[#1E1B2E] dark:text-[#EDE9FE] font-serif">
+                  {value ? `${(value * 100).toFixed(1)}%` : "N/A"}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Human Override */}
+          <div className="mt-4 pt-3 border-t border-[#E8E4F3] dark:border-[#2E2850]">
+            {overrideDropdown === overrideKey ? (
+              <div className="flex gap-1.5 flex-wrap">
+                <button
+                  onClick={() => saveOverride(overrideKey, name, "model", "accept")}
+                  className="px-2.5 py-1 text-[10px] font-semibold rounded-[8px] bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => saveOverride(overrideKey, name, "model", "needs review")}
+                  className="px-2.5 py-1 text-[10px] font-semibold rounded-[8px] bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+                >
+                  Needs Review
+                </button>
+                <button
+                  onClick={() => saveOverride(overrideKey, name, "model", "rejected")}
+                  className="px-2.5 py-1 text-[10px] font-semibold rounded-[8px] bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={() => setOverrideDropdown(null)}
+                  className="px-2.5 py-1 text-[10px] text-[#9B93B8] hover:text-[#4C4566]"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setOverrideDropdown(overrideKey)}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium text-[#5B21B6] hover:text-[#4C1D95] dark:text-[#B8AEDD]"
+                >
+                  <UserCheck size={12} />
+                  Human Override
+                </button>
+                {override && (
+                  <button
+                    onClick={() => removeOverride(overrideKey)}
+                    className="text-[10px] text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </CardBody>
+      </Card>
+    );
+  };
 
   const renderConfusionMatrix = (cm: ConfusionMatrix, modelName: string) => (
     <Card key={`cm-${modelName}`}>
@@ -431,22 +576,79 @@ export default function PredictiveAnalytics() {
 
         {/* Department cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.map((dept) => (
-            <Card key={dept.name}>
-              <CardBody>
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{dept.name}</h4>
-                  <Badge variant={dept.risk_level === "high" ? "danger" : dept.risk_level === "medium" ? "warning" : "success"}>
-                    {dept.risk_level.toUpperCase()}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-xs text-[#9B93B8]">
-                  <p>{dept.total_employees.toLocaleString()} employees &middot; {dept.attrition_count} left ({dept.attrition_pct}%)</p>
-                  <p>Avg Income: ${dept.avg_income.toLocaleString()}</p>
-                </div>
-              </CardBody>
-            </Card>
-          ))}
+          {data.map((dept) => {
+            const overrideKey = `dept_${dept.name}`;
+            const override = overrides[overrideKey];
+            const displayRisk = override ? override.overrideRisk : dept.risk_level;
+            return (
+              <Card key={dept.name}>
+                <CardBody>
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{dept.name}</h4>
+                    <div className="flex items-center gap-1.5">
+                      {override && (
+                        <Badge variant="purple">
+                          <ShieldCheck size={10} className="inline mr-0.5" />
+                          Override
+                        </Badge>
+                      )}
+                      <Badge variant={displayRisk === "high" ? "danger" : displayRisk === "medium" ? "warning" : "success"}>
+                        {displayRisk.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-1 text-xs text-[#9B93B8]">
+                    <p>{dept.total_employees.toLocaleString()} employees &middot; {dept.attrition_count} left ({dept.attrition_pct}%)</p>
+                    <p>Avg Income: ${dept.avg_income.toLocaleString()}</p>
+                  </div>
+                  {/* Human Override Controls */}
+                  <div className="mt-3 pt-2 border-t border-[#E8E4F3] dark:border-[#2E2850]">
+                    {overrideDropdown === overrideKey ? (
+                      <div className="flex gap-1.5 flex-wrap">
+                        {["low", "medium", "high"].map((risk) => (
+                          <button
+                            key={risk}
+                            onClick={() => saveOverride(overrideKey, "attrition", dept.risk_level, risk)}
+                            className={`px-2.5 py-1 text-[10px] font-semibold rounded-[8px] transition-colors ${
+                              risk === "high" ? "bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400"
+                              : risk === "medium" ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+                              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            }`}
+                          >
+                            {risk.toUpperCase()}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => setOverrideDropdown(null)}
+                          className="px-2.5 py-1 text-[10px] text-[#9B93B8] hover:text-[#4C4566]"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setOverrideDropdown(overrideKey)}
+                          className="inline-flex items-center gap-1 text-[10px] font-medium text-[#5B21B6] hover:text-[#4C1D95] dark:text-[#B8AEDD]"
+                        >
+                          <UserCheck size={12} />
+                          Override Risk
+                        </button>
+                        {override && (
+                          <button
+                            onClick={() => removeOverride(overrideKey)}
+                            className="text-[10px] text-red-500 hover:text-red-700"
+                          >
+                            Remove Override
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
         </div>
       </div>
     );
@@ -485,6 +687,7 @@ export default function PredictiveAnalytics() {
     { key: "models" as const, label: "Models", icon: Brain },
     { key: "forecasting" as const, label: "Forecasting", icon: TrendingUp },
     { key: "departments" as const, label: "Departments", icon: Building2 },
+    { key: "anomaly" as const, label: "Anomaly Detection", icon: Search },
   ];
 
   // ─── Main Render ──────────────────────────────────────────
@@ -640,6 +843,8 @@ export default function PredictiveAnalytics() {
                     <option value="headcount">Headcount</option>
                     <option value="budget_utilization">Budget Utilization</option>
                     <option value="project_completion">Project Completion</option>
+                    <option value="resource_demand">Resource Demand</option>
+                    <option value="ticket_volume">Ticket Volume</option>
                   </select>
                 </div>
                 <div>
@@ -706,6 +911,175 @@ export default function PredictiveAnalytics() {
 
       {/* ── Departments Tab ────────────────────────────────── */}
       {activeTab === "departments" && renderDepartmentRisks()}
+
+      {/* ── Anomaly Detection Tab ──────────────────────────── */}
+      {activeTab === "anomaly" && (
+        <div className="space-y-6">
+          {/* Controls */}
+          <Card>
+            <CardBody>
+              <div className="flex gap-4 items-end flex-wrap">
+                <div>
+                  <label className="block text-xs font-medium text-[#9B93B8] mb-1">Data Source</label>
+                  <select
+                    value={anomalyMetric}
+                    onChange={(e) => setAnomalyMetric(e.target.value)}
+                    className="px-3 py-2 text-sm rounded-[10px] border border-[#E8E4F3] dark:border-[#2E2850] bg-white dark:bg-[#16122E] text-[#1E1B2E] dark:text-[#EDE9FE] focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30"
+                  >
+                    <option value="system_metrics">System Metrics</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="headcount">Headcount</option>
+                    <option value="budget_utilization">Budget Utilization</option>
+                    <option value="ticket_volume">Ticket Volume</option>
+                  </select>
+                </div>
+                <button
+                  onClick={handleAnomalyDetection}
+                  disabled={anomalyLoading}
+                  className={`inline-flex items-center gap-2 px-5 py-2 rounded-[10px] text-sm font-semibold text-white transition-all ${
+                    anomalyLoading
+                      ? "bg-[#9B93B8] cursor-not-allowed"
+                      : "bg-[#5B21B6] hover:bg-[#4C1D95] shadow-[0_2px_8px_rgba(91,33,182,0.3)]"
+                  }`}
+                >
+                  <Search size={15} className={anomalyLoading ? "animate-pulse" : ""} />
+                  {anomalyLoading ? "Detecting..." : "Run Anomaly Detection"}
+                </button>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Summary cards */}
+          {anomalyResult && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard
+                title="Total Data Points"
+                value={formatNumber(anomalyResult.total_points)}
+                icon={<Activity size={20} />}
+              />
+              <StatCard
+                title="Anomalies Found"
+                value={formatNumber(anomalyResult.anomaly_count)}
+                icon={<AlertTriangle size={20} />}
+              />
+              <StatCard
+                title="Anomaly Rate"
+                value={formatPercent(anomalyResult.anomaly_rate * 100)}
+                icon={<Target size={20} />}
+              />
+            </div>
+          )}
+
+          {/* Scatter chart */}
+          {anomalyResult?.results && (
+            <Card>
+              <CardHeader>
+                <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">
+                  Anomaly Scatter Plot — {anomalyMetric.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+                </h3>
+              </CardHeader>
+              <CardBody>
+                <ResponsiveContainer width="100%" height={400}>
+                  <ScatterChart margin={{ top: 10, right: 30, bottom: 30, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E4F3" opacity={0.5} />
+                    <XAxis
+                      dataKey="index"
+                      name="Data Point"
+                      tick={{ fontSize: 10, fill: "#9B93B8" }}
+                      axisLine={false}
+                      tickLine={false}
+                      label={{ value: "Data Point Index", position: "bottom", style: { fontSize: 11, fill: "#9B93B8" } }}
+                    />
+                    <YAxis
+                      dataKey="value"
+                      name="Value"
+                      tick={AXIS_TICK}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <ZAxis range={[30, 120]} />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STYLE}
+                      formatter={(value: number, name: string) => [
+                        typeof value === "number" ? value.toFixed(2) : value,
+                        name === "value" ? "Value" : name,
+                      ]}
+                    />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+                    <Scatter
+                      name="Normal"
+                      data={anomalyResult.results
+                        .map((p, i) => ({ ...p, index: i }))
+                        .filter((p) => !p.is_anomaly)}
+                      fill="#5B21B6"
+                      fillOpacity={0.5}
+                    />
+                    <Scatter
+                      name="Anomaly"
+                      data={anomalyResult.results
+                        .map((p, i) => ({ ...p, index: i }))
+                        .filter((p) => p.is_anomaly)}
+                      fill="#DC2626"
+                      fillOpacity={0.9}
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Top anomalies table */}
+          {anomalyResult?.results && anomalyResult.anomaly_count > 0 && (
+            <Card>
+              <CardHeader>
+                <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">Top 10 Anomalies</h3>
+              </CardHeader>
+              <CardBody>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-[#9B93B8] border-b border-[#E8E4F3] dark:border-[#2E2850]">
+                        <th className="pb-2 font-medium">#</th>
+                        <th className="pb-2 font-medium">Timestamp</th>
+                        <th className="pb-2 font-medium">Value</th>
+                        <th className="pb-2 font-medium">Anomaly Score</th>
+                        <th className="pb-2 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-[#4C4566] dark:text-[#B8AEDD]">
+                      {anomalyResult.results
+                        .filter((p) => p.is_anomaly)
+                        .slice(0, 10)
+                        .map((point, i) => (
+                          <tr key={i} className="border-b border-[#E8E4F3]/50 dark:border-[#2E2850]/50">
+                            <td className="py-2.5">{i + 1}</td>
+                            <td className="py-2.5">{point.timestamp ? new Date(point.timestamp).toLocaleDateString() : "—"}</td>
+                            <td className="py-2.5 font-semibold font-serif">{typeof point.value === "number" ? point.value.toFixed(2) : point.value}</td>
+                            <td className="py-2.5">{point.anomaly_score != null ? point.anomaly_score.toFixed(4) : "—"}</td>
+                            <td className="py-2.5">
+                              <Badge variant="danger">Anomaly</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Empty state */}
+          {!anomalyResult && !anomalyLoading && (
+            <Card>
+              <CardBody className="text-center py-16">
+                <Search size={40} className="mx-auto mb-3 text-[#9B93B8]" />
+                <p className="text-sm font-medium text-[#4C4566] dark:text-[#B8AEDD]">Run anomaly detection on your data</p>
+                <p className="text-xs text-[#9B93B8] mt-1">Uses Isolation Forest to identify outliers and anomalous data points.</p>
+              </CardBody>
+            </Card>
+          )}
+        </div>
+      )}
     </PageWrapper>
   );
 }
