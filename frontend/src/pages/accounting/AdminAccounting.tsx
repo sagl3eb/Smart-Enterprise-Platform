@@ -3,9 +3,19 @@ import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardHeader, CardBody, StatCard, LoadingSpinner, Badge } from "../../components/ui/Card";
 import { Toast } from "../../components/ui/Modal";
 import { DonutChartWidget } from "../../components/charts/Charts";
-import { BookOpen, FileText, Scale, CreditCard, CheckCircle, DollarSign } from "lucide-react";
+import { FileText, Scale, CreditCard, DollarSign } from "lucide-react";
 import { formatCurrency } from "../../utils/formatters";
 import api from "../../api/client";
+
+const EMPTY_TRIAL_BALANCE = {
+  rows: [] as Array<{ accountCode: string; name: string; type: string; debit: number; credit: number }>,
+  totalDebits: 0, totalCredits: 0, isBalanced: true,
+};
+
+const EMPTY_INVOICES = {
+  totalAmount: 0, totalPaid: 0, outstanding: 0, count: 0, overdueCount: 0,
+  byStatus: [] as Array<{ status: string; count: number; total: number }>,
+};
 
 export default function AdminAccounting() {
   const [trialBalance, setTrialBalance] = useState<{ rows: Array<{ accountCode: string; name: string; type: string; debit: number; credit: number }>; totalDebits: number; totalCredits: number; isBalanced: boolean } | null>(null);
@@ -20,10 +30,14 @@ export default function AdminAccounting() {
         api.get("/accounting/trial-balance"),
         api.get("/accounting/invoices/summary"),
       ]);
-      if (tbRes.status === "fulfilled") setTrialBalance(tbRes.value.data.data);
-      if (invRes.status === "fulfilled") setInvoiceSummary(invRes.value.data.data);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+      const tbData = tbRes.status === "fulfilled" ? tbRes.value.data.data : null;
+      const invData = invRes.status === "fulfilled" ? invRes.value.data.data : null;
+      setTrialBalance(tbData || EMPTY_TRIAL_BALANCE);
+      setInvoiceSummary(invData || EMPTY_INVOICES);
+    } catch {
+      setTrialBalance(EMPTY_TRIAL_BALANCE);
+      setInvoiceSummary(EMPTY_INVOICES);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -34,7 +48,7 @@ export default function AdminAccounting() {
   const inv = invoiceSummary;
 
   return (
-    <PageWrapper title="Accounting Administration" subtitle="Admin View — Trial balance, invoice oversight, financial health">
+    <PageWrapper title="Accounting Administration" subtitle="Admin View - Trial balance, invoice oversight, financial health">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -44,7 +58,7 @@ export default function AdminAccounting() {
         <StatCard title="Trial Balance" value={tb?.isBalanced ? "Balanced" : "Unbalanced"} icon={<Scale size={20} />} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
         {/* Trial Balance */}
         <Card>
           <CardHeader className="flex items-center justify-between">
@@ -88,7 +102,12 @@ export default function AdminAccounting() {
           <CardBody>
             {inv?.byStatus && inv.byStatus.length > 0 ? (
               <>
-                <DonutChartWidget data={inv.byStatus.map((s) => ({ name: s.status.replace("_", " "), value: s.count }))} height={200} innerRadius={50} outerRadius={75} />
+                <DonutChartWidget
+                  data={inv.byStatus.map((s) => ({ name: s.status.replace("_", " "), value: s.count }))}
+                  height={260}
+                  innerRadius={55}
+                  outerRadius={90}
+                />
                 <div className="mt-4 space-y-2">
                   {inv.byStatus.map((s) => (
                     <div key={s.status} className="flex items-center justify-between py-1.5 border-b border-[#E8E4F3] dark:border-[#2E2850] last:border-0">

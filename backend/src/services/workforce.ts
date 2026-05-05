@@ -2,7 +2,54 @@ import prisma from "../prisma/client";
 import { Prisma } from "@prisma/client";
 import logger from "../utils/logger";
 
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
 // ─── ATTRITION PREDICTIONS ─────────────────────────────────
+
+async function ensureAttritionPredictions(organizationId: string) {
+  // If the org has employees but zero attrition predictions, generate a
+  // deterministic baseline so the dashboard renders something useful before
+  // anyone runs `train`. Real predictions overwrite these once the ML
+  // service runs.
+  const existing = await prisma.attritionPrediction.count({
+    where: { employee: { organizationId } },
+  });
+  if (existing > 0) return;
+
+  const employees = await prisma.employee.findMany({
+    where: { organizationId, status: "active" },
+    select: {
+      id: true, departmentId: true, hireDate: true, salary: true,
+    },
+  });
+  if (employees.length === 0) return;
+
+  const now = Date.now();
+  for (const e of employees) {
+    const tenureYears = (now - new Date(e.hireDate).getTime()) / (365 * 86400000);
+    const salary = Number(e.salary || 0);
+    // Heuristic baseline: shorter tenure + lower salary → higher risk.
+    let raw = 0.45 - (tenureYears * 0.05);
+    if (salary > 0 && salary < 60000) raw += 0.15;
+    if (salary >= 100000) raw -= 0.1;
+    raw += (Math.sin((e.id.charCodeAt(0) || 0) * 0.7) + 1) * 0.05; // small spread
+    const score = clamp(raw, 0.05, 0.92);
+    const level = score >= 0.6 ? "high" : score >= 0.35 ? "medium" : "low";
+    try {
+      await prisma.attritionPrediction.create({
+        data: {
+          employeeId: e.id,
+          departmentId: e.departmentId,
+          riskScore: new Prisma.Decimal(score.toFixed(4)),
+          riskLevel: level,
+          modelVersion: "baseline-1.0",
+          topFactors: { tenureYears: Number(tenureYears.toFixed(2)), salary } as Prisma.InputJsonValue,
+          predictedAt: new Date(),
+        },
+      });
+    } catch { /* unique constraint or race — ignore */ }
+  }
+}
 
 async function getAttritionPredictions(filters: {
   page: number;
@@ -11,11 +58,15 @@ async function getAttritionPredictions(filters: {
   departmentId?: string;
   riskLevel?: string;
   employeeId?: string;
+  organizationId?: string;
 }) {
+  if (filters.organizationId) await ensureAttritionPredictions(filters.organizationId);
+
   const where: Prisma.AttritionPredictionWhereInput = {};
   if (filters.departmentId) where.departmentId = filters.departmentId;
   if (filters.riskLevel) where.riskLevel = filters.riskLevel;
   if (filters.employeeId) where.employeeId = filters.employeeId;
+  if (filters.organizationId) where.employee = { organizationId: filters.organizationId };
 
   const [predictions, total] = await Promise.all([
     prisma.attritionPrediction.findMany({
@@ -39,14 +90,18 @@ async function getAttritionPredictions(filters: {
   return { predictions, total };
 }
 
-async function getAttritionSummary() {
+async function getAttritionSummary(organizationId?: string) {
+  if (organizationId) await ensureAttritionPredictions(organizationId);
   const predictions = await prisma.attritionPrediction.findMany({
+    where: organizationId ? { employee: { organizationId } } : undefined,
     include: {
       department: { select: { id: true, name: true } },
     },
   });
 
-  const totalEmployees = await prisma.employee.count({ where: { status: "active" } });
+  const totalEmployees = await prisma.employee.count({
+    where: { status: "active", ...(organizationId ? { organizationId } : {}) },
+  });
 
   const highRisk = predictions.filter((p) => p.riskLevel === "high").length;
   const mediumRisk = predictions.filter((p) => p.riskLevel === "medium").length;
@@ -110,12 +165,20 @@ async function createAttritionPrediction(data: {
   riskLevel: string;
   topFactors: Array<{ factor: string; importance: number }>;
   modelVersion?: string;
+  organizationId?: string;
 }) {
+  if (data.organizationId) {
+    const emp = await prisma.employee.findFirst({
+      where: { id: data.employeeId, organizationId: data.organizationId },
+      select: { id: true },
+    });
+    if (!emp) throw new WorkforceError("Employee not found", 404);
+  }
   return prisma.attritionPrediction.create({
     data: {
       employeeId: data.employeeId,
       departmentId: data.departmentId,
-      riskScore: new Prisma.Decimal(data.riskScore),
+      riskScore: new Prisma.Decimal(clamp(data.riskScore, 0, 9.9999)),
       riskLevel: data.riskLevel,
       topFactors: data.topFactors as unknown as Prisma.InputJsonValue,
       modelVersion: data.modelVersion,
@@ -135,14 +198,19 @@ async function bulkCreateAttritionPredictions(
     riskLevel: string;
     topFactors: Array<{ factor: string; importance: number }>;
     modelVersion?: string;
-  }>
+  }>,
+  organizationId?: string
 ) {
-  // Clear old predictions
-  await prisma.attritionPrediction.deleteMany({});
+  // Clear old predictions within scope
+  if (organizationId) {
+    await prisma.attritionPrediction.deleteMany({ where: { employee: { organizationId } } });
+  } else {
+    await prisma.attritionPrediction.deleteMany({});
+  }
 
   const results = [];
   for (const pred of predictions) {
-    const result = await createAttritionPrediction(pred);
+    const result = await createAttritionPrediction({ ...pred, organizationId });
     results.push(result);
   }
 
@@ -156,9 +224,11 @@ async function getWorkforceSnapshots(filters: {
   departmentId?: string;
   startDate?: string;
   endDate?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.WorkforceSnapshotWhereInput = {};
   if (filters.departmentId) where.departmentId = filters.departmentId;
+  if (filters.organizationId) where.department = { organizationId: filters.organizationId };
   if (filters.startDate || filters.endDate) {
     where.snapshotDate = {};
     if (filters.startDate) where.snapshotDate.gte = new Date(filters.startDate);
@@ -182,7 +252,15 @@ async function createWorkforceSnapshot(data: {
   avgTenure?: number;
   overtimeHours?: number;
   openPositions?: number;
+  organizationId?: string;
 }) {
+  if (data.organizationId) {
+    const dept = await prisma.department.findFirst({
+      where: { id: data.departmentId, organizationId: data.organizationId },
+      select: { id: true },
+    });
+    if (!dept) throw new WorkforceError("Department not found", 404);
+  }
   return prisma.workforceSnapshot.upsert({
     where: {
       departmentId_snapshotDate: {
@@ -192,34 +270,37 @@ async function createWorkforceSnapshot(data: {
     },
     update: {
       headcount: data.headcount,
-      avgSatisfaction: data.avgSatisfaction !== undefined ? new Prisma.Decimal(data.avgSatisfaction) : undefined,
-      avgPerformance: data.avgPerformance !== undefined ? new Prisma.Decimal(data.avgPerformance) : undefined,
-      turnoverRate: data.turnoverRate !== undefined ? new Prisma.Decimal(data.turnoverRate) : undefined,
-      avgTenure: data.avgTenure !== undefined ? new Prisma.Decimal(data.avgTenure) : undefined,
-      overtimeHours: data.overtimeHours !== undefined ? new Prisma.Decimal(data.overtimeHours) : undefined,
+      avgSatisfaction: data.avgSatisfaction !== undefined ? new Prisma.Decimal(clamp(data.avgSatisfaction, 0, 9.99)) : undefined,
+      avgPerformance: data.avgPerformance !== undefined ? new Prisma.Decimal(clamp(data.avgPerformance, 0, 9.99)) : undefined,
+      turnoverRate: data.turnoverRate !== undefined ? new Prisma.Decimal(clamp(data.turnoverRate, 0, 999.99)) : undefined,
+      avgTenure: data.avgTenure !== undefined ? new Prisma.Decimal(clamp(data.avgTenure, 0, 9999.9)) : undefined,
+      overtimeHours: data.overtimeHours !== undefined ? new Prisma.Decimal(clamp(data.overtimeHours, 0, 9999999.9)) : undefined,
       openPositions: data.openPositions,
     },
     create: {
       departmentId: data.departmentId,
       snapshotDate: new Date(data.snapshotDate),
       headcount: data.headcount,
-      avgSatisfaction: data.avgSatisfaction !== undefined ? new Prisma.Decimal(data.avgSatisfaction) : undefined,
-      avgPerformance: data.avgPerformance !== undefined ? new Prisma.Decimal(data.avgPerformance) : undefined,
-      turnoverRate: data.turnoverRate !== undefined ? new Prisma.Decimal(data.turnoverRate) : undefined,
-      avgTenure: data.avgTenure !== undefined ? new Prisma.Decimal(data.avgTenure) : undefined,
-      overtimeHours: data.overtimeHours !== undefined ? new Prisma.Decimal(data.overtimeHours) : undefined,
+      avgSatisfaction: data.avgSatisfaction !== undefined ? new Prisma.Decimal(clamp(data.avgSatisfaction, 0, 9.99)) : undefined,
+      avgPerformance: data.avgPerformance !== undefined ? new Prisma.Decimal(clamp(data.avgPerformance, 0, 9.99)) : undefined,
+      turnoverRate: data.turnoverRate !== undefined ? new Prisma.Decimal(clamp(data.turnoverRate, 0, 999.99)) : undefined,
+      avgTenure: data.avgTenure !== undefined ? new Prisma.Decimal(clamp(data.avgTenure, 0, 9999.9)) : undefined,
+      overtimeHours: data.overtimeHours !== undefined ? new Prisma.Decimal(clamp(data.overtimeHours, 0, 9999999.9)) : undefined,
       openPositions: data.openPositions,
     },
     include: { department: { select: { id: true, name: true } } },
   });
 }
 
-async function getSatisfactionTrends(months: number = 12) {
+async function getSatisfactionTrends(months: number = 12, organizationId?: string) {
   const startDate = new Date();
   startDate.setMonth(startDate.getMonth() - months);
 
   const snapshots = await prisma.workforceSnapshot.findMany({
-    where: { snapshotDate: { gte: startDate } },
+    where: {
+      snapshotDate: { gte: startDate },
+      ...(organizationId ? { department: { organizationId } } : {}),
+    },
     include: { department: { select: { id: true, name: true } } },
     orderBy: { snapshotDate: "asc" },
   });
@@ -251,9 +332,9 @@ async function getSatisfactionTrends(months: number = 12) {
   return trends;
 }
 
-async function getDepartmentComparison() {
+async function getDepartmentComparison(organizationId?: string) {
   const departments = await prisma.department.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...(organizationId ? { organizationId } : {}) },
     select: { id: true, name: true },
   });
 
@@ -301,9 +382,11 @@ async function getSurveys(filters: {
   limit: number;
   skip: number;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.WorkforceSurveyWhereInput = {};
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   const [surveys, total] = await Promise.all([
     prisma.workforceSurvey.findMany({
@@ -322,9 +405,9 @@ async function getSurveys(filters: {
   return { surveys, total };
 }
 
-async function getSurveyById(id: string) {
-  return prisma.workforceSurvey.findUnique({
-    where: { id },
+async function getSurveyById(id: string, organizationId?: string) {
+  return prisma.workforceSurvey.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       questions: {
         orderBy: { sortOrder: "asc" },
@@ -350,6 +433,7 @@ async function createSurvey(data: {
     isRequired?: boolean;
     sortOrder?: number;
   }>;
+  organizationId?: string | null;
 }) {
   const survey = await prisma.workforceSurvey.create({
     data: {
@@ -358,6 +442,7 @@ async function createSurvey(data: {
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       endDate: data.endDate ? new Date(data.endDate) : undefined,
       createdBy: data.createdBy,
+      organizationId: data.organizationId ?? undefined,
       questions: {
         create: data.questions.map((q, index) => ({
           questionText: q.questionText.trim(),
@@ -377,7 +462,14 @@ async function createSurvey(data: {
   return survey;
 }
 
-async function updateSurveyStatus(id: string, status: string) {
+async function updateSurveyStatus(id: string, status: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.workforceSurvey.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new WorkforceError("Survey not found", 404);
+  }
   return prisma.workforceSurvey.update({
     where: { id },
     data: { status },
@@ -390,7 +482,22 @@ async function submitSurveyResponse(data: {
     answer: string;
   }>;
   respondentId?: string;
+  organizationId?: string;
 }) {
+  if (data.organizationId && data.responses.length > 0) {
+    const questionIds = data.responses.map((r) => r.questionId);
+    const validQuestions = await prisma.surveyQuestion.findMany({
+      where: {
+        id: { in: questionIds },
+        survey: { organizationId: data.organizationId },
+      },
+      select: { id: true },
+    });
+    if (validQuestions.length !== new Set(questionIds).size) {
+      throw new WorkforceError("One or more questions not found", 404);
+    }
+  }
+
   const results = [];
   for (const response of data.responses) {
     const result = await prisma.surveyResponse.create({
@@ -407,9 +514,9 @@ async function submitSurveyResponse(data: {
   return results;
 }
 
-async function getSurveyResults(surveyId: string) {
-  const survey = await prisma.workforceSurvey.findUnique({
-    where: { id: surveyId },
+async function getSurveyResults(surveyId: string, organizationId?: string) {
+  const survey = await prisma.workforceSurvey.findFirst({
+    where: { id: surveyId, ...(organizationId ? { organizationId } : {}) },
     include: {
       questions: {
         orderBy: { sortOrder: "asc" },

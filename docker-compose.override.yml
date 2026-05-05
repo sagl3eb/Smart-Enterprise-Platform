@@ -1,0 +1,16 @@
+# Development overrides — hot reload with volume mounts
+services:
+  backend:
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./backend/src:/app/src
+
+  ml-service:
+    volumes:
+      - ./ml-service/app:/app/app
+      - ml_models:/app/models
+
+  frontend:
+    volumes:
+      - ./frontend/src:/app/src

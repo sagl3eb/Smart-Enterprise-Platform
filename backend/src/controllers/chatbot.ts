@@ -1,10 +1,11 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
+import { ScopedRequest, readOrgFilter } from "../middleware/callerScope";
 import chatbotService from "../services/chatbot";
 import { sendSuccess, sendError, sendBadRequest } from "../utils/response";
 import logger from "../utils/logger";
 
-async function sendMessage(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function sendMessage(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { sessionId, message } = req.body;
     if (!message || typeof message !== "string" || !message.trim()) {
@@ -14,12 +15,14 @@ async function sendMessage(req: AuthenticatedRequest, res: Response): Promise<vo
 
     const userId = req.user?.userId || null;
     const accessToken = req.headers.authorization?.split(" ")[1];
+    const organizationId = req.scope ? readOrgFilter(req.scope) : undefined;
 
     const result = await chatbotService.processMessage(
       sessionId || null,
       userId,
       message.trim(),
-      accessToken
+      accessToken,
+      organizationId,
     );
 
     sendSuccess(res, result, "Message processed");
@@ -56,10 +59,21 @@ async function getSessions(req: AuthenticatedRequest, res: Response): Promise<vo
   }
 }
 
+async function getStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const status = await chatbotService.getOllamaStatus();
+    sendSuccess(res, status, "Chatbot status");
+  } catch (error) {
+    logger.error("Chatbot status error:", error);
+    sendSuccess(res, { available: false, model: "unknown", url: "unknown" }, "Chatbot status");
+  }
+}
+
 const chatbotController = {
   sendMessage,
   getHistory,
   getSessions,
+  getStatus,
 };
 
 export default chatbotController;

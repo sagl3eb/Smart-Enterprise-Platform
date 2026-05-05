@@ -4,10 +4,11 @@ import logger from "../utils/logger";
 
 // ─── KPI DEFINITIONS ───────────────────────────────────────
 
-async function getKpiDefinitions(filters: { module?: string; isActive?: boolean }) {
+async function getKpiDefinitions(filters: { module?: string; isActive?: boolean; organizationId?: string }) {
   const where: Prisma.KpiDefinitionWhereInput = {};
   if (filters.module) where.module = filters.module;
   if (filters.isActive !== undefined) where.isActive = filters.isActive;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   return prisma.kpiDefinition.findMany({
     where,
@@ -25,6 +26,7 @@ async function createKpiDefinition(data: {
   unit?: string;
   target?: number;
   format?: string;
+  organizationId?: string | null;
 }) {
   return prisma.kpiDefinition.create({
     data: {
@@ -34,6 +36,7 @@ async function createKpiDefinition(data: {
       unit: data.unit?.trim(),
       target: data.target !== undefined ? new Prisma.Decimal(data.target) : undefined,
       format: data.format || "number",
+      organizationId: data.organizationId ?? undefined,
     },
   });
 }
@@ -43,7 +46,14 @@ async function updateKpiDefinition(id: string, data: {
   target?: number;
   format?: string;
   isActive?: boolean;
-}) {
+}, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.kpiDefinition.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("KPI not found", 404);
+  }
   return prisma.kpiDefinition.update({
     where: { id },
     data: {
@@ -62,7 +72,15 @@ async function recordKpiSnapshot(data: {
   value: number;
   snapshotDate: string;
   previousValue?: number;
+  organizationId?: string;
 }) {
+  if (data.organizationId) {
+    const owned = await prisma.kpiDefinition.findFirst({
+      where: { id: data.kpiId, organizationId: data.organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("KPI not found", 404);
+  }
   return prisma.kpiSnapshot.upsert({
     where: {
       kpiId_snapshotDate: {
@@ -84,9 +102,9 @@ async function recordKpiSnapshot(data: {
   });
 }
 
-async function getLatestKpis() {
+async function getLatestKpis(organizationId?: string) {
   const kpis = await prisma.kpiDefinition.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...(organizationId ? { organizationId } : {}) },
     include: {
       snapshots: {
         take: 2,
@@ -125,7 +143,14 @@ async function getLatestKpis() {
   });
 }
 
-async function getKpiHistory(kpiId: string, days: number = 90) {
+async function getKpiHistory(kpiId: string, days: number = 90, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.kpiDefinition.findFirst({
+      where: { id: kpiId, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("KPI not found", 404);
+  }
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
@@ -148,9 +173,9 @@ async function getDashboardLayouts(userId: string) {
   });
 }
 
-async function getDashboardLayoutById(id: string) {
-  return prisma.dashboardLayout.findUnique({
-    where: { id },
+async function getDashboardLayoutById(id: string, userId?: string) {
+  return prisma.dashboardLayout.findFirst({
+    where: { id, ...(userId ? { userId } : {}) },
     include: { widgets: true },
   });
 }
@@ -199,8 +224,10 @@ async function updateDashboardLayout(id: string, data: {
   name?: string;
   layout?: Record<string, unknown>;
   isDefault?: boolean;
-}) {
-  const existing = await prisma.dashboardLayout.findUnique({ where: { id } });
+}, userId?: string) {
+  const existing = await prisma.dashboardLayout.findFirst({
+    where: { id, ...(userId ? { userId } : {}) },
+  });
   if (!existing) throw new DashboardError("Layout not found", 404);
 
   if (data.isDefault) {
@@ -221,7 +248,14 @@ async function updateDashboardLayout(id: string, data: {
   });
 }
 
-async function deleteDashboardLayout(id: string) {
+async function deleteDashboardLayout(id: string, userId?: string) {
+  if (userId) {
+    const owned = await prisma.dashboardLayout.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("Layout not found", 404);
+  }
   await prisma.dashboardLayout.delete({ where: { id } });
 }
 
@@ -234,7 +268,14 @@ async function addWidget(data: {
   config: Record<string, unknown>;
   position: Record<string, unknown>;
   size: Record<string, unknown>;
-}) {
+}, userId?: string) {
+  if (userId) {
+    const owned = await prisma.dashboardLayout.findFirst({
+      where: { id: data.layoutId, userId },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("Layout not found", 404);
+  }
   return prisma.dashboardWidget.create({
     data: {
       layoutId: data.layoutId,
@@ -252,7 +293,14 @@ async function updateWidget(id: string, data: {
   config?: Record<string, unknown>;
   position?: Record<string, unknown>;
   size?: Record<string, unknown>;
-}) {
+}, userId?: string) {
+  if (userId) {
+    const owned = await prisma.dashboardWidget.findFirst({
+      where: { id, layout: { userId } },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("Widget not found", 404);
+  }
   return prisma.dashboardWidget.update({
     where: { id },
     data: {
@@ -264,34 +312,48 @@ async function updateWidget(id: string, data: {
   });
 }
 
-async function deleteWidget(id: string) {
+async function deleteWidget(id: string, userId?: string) {
+  if (userId) {
+    const owned = await prisma.dashboardWidget.findFirst({
+      where: { id, layout: { userId } },
+      select: { id: true },
+    });
+    if (!owned) throw new DashboardError("Widget not found", 404);
+  }
   await prisma.dashboardWidget.delete({ where: { id } });
 }
 
 // ─── EXECUTIVE SUMMARY ────────────────────────────────────
 
-async function getExecutiveSummary() {
+async function getExecutiveSummary(organizationId?: string) {
+  const orgFilter = organizationId ? { organizationId } : {};
+  const employeeOrgFilter = organizationId ? { employee: { organizationId } } : {};
+  const categoryOrgFilter = organizationId ? { category: { organizationId } } : {};
   const [
     employeeCount, departmentCount, pendingLeaves,
     transactionStats, openTickets, activeProjects,
     highRiskEmployees, unreadAlerts,
   ] = await Promise.all([
-    prisma.employee.count({ where: { status: "active" } }),
-    prisma.department.count({ where: { isActive: true } }),
-    prisma.leaveRequest.count({ where: { status: "pending" } }),
+    prisma.employee.count({ where: { status: { in: ["active", "on_leave"] }, ...orgFilter } }),
+    prisma.department.count({ where: { isActive: true, ...orgFilter } }),
+    prisma.leaveRequest.count({ where: { status: "pending", ...employeeOrgFilter } }),
     prisma.transaction.aggregate({
-      where: { status: "completed", transactionDate: { gte: new Date(new Date().getFullYear(), 0, 1) } },
+      where: {
+        status: "completed",
+        transactionDate: { gte: new Date(new Date().getFullYear(), 0, 1) },
+        ...orgFilter,
+      },
       _sum: { amount: true },
       _count: true,
     }),
-    prisma.itTicket.count({ where: { status: { in: ["open", "in_progress"] } } }),
-    prisma.project.count({ where: { status: { in: ["active", "in_progress"] } } }),
-    prisma.attritionPrediction.count({ where: { riskLevel: "high" } }),
-    prisma.alert.count({ where: { isRead: false } }),
+    prisma.itTicket.count({ where: { status: { in: ["open", "in_progress"] }, ...orgFilter } }),
+    prisma.project.count({ where: { status: { in: ["active", "in_progress"] }, ...orgFilter } }),
+    prisma.attritionPrediction.count({ where: { riskLevel: "high", ...employeeOrgFilter } }),
+    prisma.alert.count({ where: { isRead: false, ...orgFilter } }),
   ]);
 
   const budgetSummary = await prisma.annualBudget.aggregate({
-    where: { fiscalYear: new Date().getFullYear() },
+    where: { fiscalYear: new Date().getFullYear(), ...categoryOrgFilter },
     _sum: { allocatedAmount: true, spentAmount: true },
   });
 
@@ -322,6 +384,96 @@ async function getExecutiveSummary() {
   };
 }
 
+// ─── CHART DATA ───────────────────────────────────────────
+
+async function getDashboardCharts(organizationId?: string) {
+  const orgFilter = organizationId ? { organizationId } : {};
+
+  // Revenue vs Expenses — last 6 months
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const transactions = await prisma.transaction.findMany({
+    where: {
+      status: "completed",
+      transactionDate: { gte: sixMonthsAgo },
+      ...orgFilter,
+    },
+    select: { type: true, amount: true, transactionDate: true },
+  });
+
+  const monthBuckets: Record<string, { month: string; revenue: number; expenses: number }> = {};
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleString("en-US", { month: "short" });
+    monthBuckets[key] = { month: label, revenue: 0, expenses: 0 };
+  }
+
+  for (const t of transactions) {
+    const d = new Date(t.transactionDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const bucket = monthBuckets[key];
+    if (!bucket) continue;
+    const amt = Number(t.amount);
+    const type = (t.type || "").toLowerCase();
+    if (type === "revenue" || type === "income" || type === "credit") {
+      bucket.revenue += amt;
+    } else if (type === "expense" || type === "debit") {
+      bucket.expenses += amt;
+    }
+  }
+  const monthlyRevenue = Object.values(monthBuckets);
+
+  // Tickets by status
+  const ticketGroups = await prisma.itTicket.groupBy({
+    by: ["status"],
+    where: { ...orgFilter },
+    _count: { _all: true },
+  });
+  const ticketsByStatus = ticketGroups.map((g) => ({
+    name: g.status.charAt(0).toUpperCase() + g.status.slice(1).replace(/_/g, " "),
+    value: g._count._all,
+  }));
+
+  // Departments with headcount + avg satisfaction (derived from performance reviews)
+  const departments = await prisma.department.findMany({
+    where: { isActive: true, ...orgFilter },
+    select: {
+      name: true,
+      employees: {
+        where: { status: { in: ["active", "on_leave"] } },
+        select: {
+          id: true,
+          performanceReviews: {
+            orderBy: { reviewDate: "desc" },
+            take: 1,
+            select: { overallScore: true },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+    take: 10,
+  });
+  const deptChartData = departments
+    .filter((d) => d.employees.length > 0)
+    .map((d) => {
+      const scores = d.employees
+        .map((e) => e.performanceReviews[0]?.overallScore)
+        .filter((s): s is NonNullable<typeof s> => s != null)
+        .map((s) => Number(s));
+      const avgSat = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      return {
+        name: d.name,
+        employees: d.employees.length,
+        satisfaction: Math.round(avgSat * 10) / 10,
+      };
+    });
+
+  return { monthlyRevenue, ticketsByStatus, deptChartData };
+}
+
 export class DashboardError extends Error {
   statusCode: number;
   constructor(message: string, statusCode: number = 400) {
@@ -336,7 +488,7 @@ const dashboardService = {
   recordKpiSnapshot, getLatestKpis, getKpiHistory,
   getDashboardLayouts, getDashboardLayoutById, createDashboardLayout, updateDashboardLayout, deleteDashboardLayout,
   addWidget, updateWidget, deleteWidget,
-  getExecutiveSummary,
+  getExecutiveSummary, getDashboardCharts,
 };
 
 export default dashboardService;

@@ -3,6 +3,19 @@ import { AuthenticatedRequest } from "../middleware/auth";
 import authService, { AuthError } from "../services/auth";
 import { sendSuccess, sendCreated, sendError, sendBadRequest } from "../utils/response";
 import logger from "../utils/logger";
+import prisma from "../prisma/client";
+
+async function getCallerScope(req: AuthenticatedRequest): Promise<{ orgId: string | null; isSuper: boolean }> {
+  if (!req.user) return { orgId: null, isSuper: false };
+  // Always re-read role from DB (JWT can be stale after a role change)
+  const u = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { organizationId: true, role: { select: { name: true } } },
+  });
+  const roleName = u?.role.name ?? req.user.roleName;
+  if (roleName === "super_admin") return { orgId: null, isSuper: true };
+  return { orgId: u?.organizationId ?? null, isSuper: false };
+}
 
 async function login(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
@@ -37,9 +50,33 @@ async function createUser(req: AuthenticatedRequest, res: Response): Promise<voi
 async function listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const { organizationId } = req.query;
-    const users = await authService.listUsers(organizationId as string);
+    const scope = await getCallerScope(req);
+    const effectiveOrgId = scope.isSuper ? (organizationId as string | undefined) : (scope.orgId || undefined);
+    const users = await authService.listUsers(effectiveOrgId);
     sendSuccess(res, users, "Users retrieved");
   } catch (error) { logger.error("List users error:", error); sendError(res, "Failed to list users"); }
+}
+
+async function getUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const user = await authService.getUserById(req.params.userId);
+    sendSuccess(res, user, "User details retrieved");
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Get user error:", error);
+    sendError(res, "Failed to retrieve user");
+  }
+}
+
+async function getOrganizationById(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    const org = await authService.getOrganizationById(req.params.orgId);
+    sendSuccess(res, org, "Organization details retrieved");
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Get org error:", error);
+    sendError(res, "Failed to retrieve organization");
+  }
 }
 
 async function updateUserModuleAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -65,20 +102,38 @@ async function activateUser(req: AuthenticatedRequest, res: Response): Promise<v
   } catch (error) { logger.error("Activate user error:", error); sendError(res, "Failed to activate user"); }
 }
 
+async function deleteUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+  try {
+    if (!req.user) { sendError(res, "Unauthorized", 401); return; }
+    const scope = await getCallerScope(req);
+    await authService.deleteUser(req.params.userId, scope);
+    sendSuccess(res, null, "User deleted");
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Delete user error:", error);
+    sendError(res, "Failed to delete user");
+  }
+}
+
 async function listOrganizations(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const orgs = await authService.listOrganizations();
+    const scope = await getCallerScope(req);
+    const orgs = await authService.listOrganizations(scope.isSuper ? null : scope.orgId);
     sendSuccess(res, orgs, "Organizations retrieved");
   } catch (error) { logger.error("List orgs error:", error); sendError(res, "Failed to list organizations"); }
 }
 
 async function createOrganization(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const { name, slug, description, enabledModules } = req.body;
+    const { name, slug, description, enabledModules, adminEmail, adminPassword, adminFirstName, adminLastName } = req.body;
     if (!name || !slug) { sendBadRequest(res, "Name and slug required"); return; }
-    const org = await authService.createOrganization({ name, slug, description, enabledModules });
+    const org = await authService.createOrganization({ name, slug, description, enabledModules, adminEmail, adminPassword, adminFirstName, adminLastName });
     sendCreated(res, org, "Organization created");
-  } catch (error) { logger.error("Create org error:", error); sendError(res, "Failed to create organization"); }
+  } catch (error) {
+    if (error instanceof AuthError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Create org error:", error);
+    sendError(res, "Failed to create organization");
+  }
 }
 
 async function updateOrgModules(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -174,8 +229,8 @@ async function getRoles(req: AuthenticatedRequest, res: Response): Promise<void>
 }
 
 const authController = {
-  login, createUser, listUsers, updateUserModuleAccess, deactivateUser, activateUser,
-  listOrganizations, createOrganization, updateOrgModules, deleteOrganization,
+  login, createUser, listUsers, getUserById, updateUserModuleAccess, deactivateUser, activateUser, deleteUser,
+  listOrganizations, getOrganizationById, createOrganization, updateOrgModules, deleteOrganization,
   refresh, logout, logoutAll, getProfile, updateProfile, changePassword, getRoles,
 };
 

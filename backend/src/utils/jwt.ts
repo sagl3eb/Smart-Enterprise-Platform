@@ -21,7 +21,7 @@ export interface DecodedToken extends JwtPayload {
 
 export function generateAccessToken(payload: TokenPayload): string {
   const options: SignOptions = {
-    expiresIn: ACCESS_EXPIRY as string,
+    expiresIn: ACCESS_EXPIRY as any,
     issuer: "smart-enterprise-platform",
     subject: payload.userId,
   };
@@ -30,7 +30,7 @@ export function generateAccessToken(payload: TokenPayload): string {
 
 export function generateRefreshToken(payload: TokenPayload): string {
   const options: SignOptions = {
-    expiresIn: REFRESH_EXPIRY as string,
+    expiresIn: REFRESH_EXPIRY as any,
     issuer: "smart-enterprise-platform",
     subject: payload.userId,
   };

@@ -12,10 +12,12 @@ async function getAssets(filters: {
   status?: string;
   search?: string;
   assignedTo?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.AssetWhereInput = {};
   if (filters.category) where.category = filters.category;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.assignedTo) where.assignedTo = { contains: filters.assignedTo, mode: "insensitive" };
   if (filters.search) {
     where.OR = [
@@ -40,8 +42,10 @@ async function getAssets(filters: {
   return { assets, total };
 }
 
-async function getAssetById(id: string) {
-  return prisma.asset.findUnique({ where: { id } });
+async function getAssetById(id: string, organizationId?: string) {
+  return prisma.asset.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
 }
 
 async function createAsset(data: {
@@ -57,12 +61,23 @@ async function createAsset(data: {
   assignedTo?: string;
   location?: string;
   notes?: string;
+  organizationId?: string | null;
 }) {
-  const existing = await prisma.asset.findUnique({ where: { assetTag: data.assetTag } });
+  const existing = await prisma.asset.findFirst({
+    where: {
+      assetTag: data.assetTag,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
+  });
   if (existing) throw new IctError("Asset tag already exists", 409);
 
   if (data.serialNumber) {
-    const serialExists = await prisma.asset.findUnique({ where: { serialNumber: data.serialNumber } });
+    const serialExists = await prisma.asset.findFirst({
+      where: {
+        serialNumber: data.serialNumber,
+        ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+      },
+    });
     if (serialExists) throw new IctError("Serial number already exists", 409);
   }
 
@@ -80,6 +95,7 @@ async function createAsset(data: {
       assignedTo: data.assignedTo?.trim(),
       location: data.location?.trim(),
       notes: data.notes?.trim(),
+      organizationId: data.organizationId ?? undefined,
     },
   });
 
@@ -88,26 +104,36 @@ async function createAsset(data: {
 }
 
 async function updateAsset(id: string, data: {
+  assetTag?: string;
   name?: string;
   category?: string;
   manufacturer?: string;
   model?: string;
+  serialNumber?: string;
+  purchaseDate?: string;
+  purchasePrice?: number;
   status?: string;
   assignedTo?: string;
   location?: string;
   warrantyExpiry?: string;
   notes?: string;
-}) {
-  const existing = await prisma.asset.findUnique({ where: { id } });
+}, organizationId?: string) {
+  const existing = await prisma.asset.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new IctError("Asset not found", 404);
 
   return prisma.asset.update({
     where: { id },
     data: {
+      ...(data.assetTag && { assetTag: data.assetTag.trim() }),
       ...(data.name && { name: data.name.trim() }),
       ...(data.category && { category: data.category.trim() }),
       ...(data.manufacturer !== undefined && { manufacturer: data.manufacturer?.trim() }),
       ...(data.model !== undefined && { model: data.model?.trim() }),
+      ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber?.trim() }),
+      ...(data.purchaseDate !== undefined && { purchaseDate: data.purchaseDate ? new Date(data.purchaseDate) : null }),
+      ...(data.purchasePrice !== undefined && { purchasePrice: data.purchasePrice }),
       ...(data.status && { status: data.status }),
       ...(data.assignedTo !== undefined && { assignedTo: data.assignedTo?.trim() }),
       ...(data.location !== undefined && { location: data.location?.trim() }),
@@ -117,20 +143,24 @@ async function updateAsset(id: string, data: {
   });
 }
 
-async function deleteAsset(id: string) {
-  const existing = await prisma.asset.findUnique({ where: { id } });
+async function deleteAsset(id: string, organizationId?: string) {
+  const existing = await prisma.asset.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new IctError("Asset not found", 404);
   await prisma.asset.delete({ where: { id } });
   logger.info(`Asset deleted: ${existing.assetTag}`);
 }
 
-async function getAssetStats() {
+async function getAssetStats(organizationId?: string) {
+  const baseWhere: Prisma.AssetWhereInput = organizationId ? { organizationId } : {};
   const [total, byStatus, byCategory, expiringWarranty] = await Promise.all([
-    prisma.asset.count(),
-    prisma.asset.groupBy({ by: ["status"], _count: true }),
-    prisma.asset.groupBy({ by: ["category"], _count: true, orderBy: { _count: { category: "desc" } } }),
+    prisma.asset.count({ where: baseWhere }),
+    prisma.asset.groupBy({ by: ["status"], where: baseWhere, _count: true }),
+    prisma.asset.groupBy({ by: ["category"], where: baseWhere, _count: true, orderBy: { _count: { category: "desc" } } }),
     prisma.asset.count({
       where: {
+        ...baseWhere,
         warrantyExpiry: {
           gte: new Date(),
           lte: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
@@ -141,7 +171,7 @@ async function getAssetStats() {
 
   const totalValue = await prisma.asset.aggregate({
     _sum: { purchasePrice: true },
-    where: { status: { not: "disposed" } },
+    where: { ...baseWhere, status: { not: "disposed" } },
   });
 
   return {
@@ -161,9 +191,11 @@ async function getSoftwareLicenses(filters: {
   skip: number;
   status?: string;
   search?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.SoftwareLicenseWhereInput = {};
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { softwareName: { contains: filters.search, mode: "insensitive" } },
@@ -184,8 +216,10 @@ async function getSoftwareLicenses(filters: {
   return { licenses, total };
 }
 
-async function getSoftwareLicenseById(id: string) {
-  return prisma.softwareLicense.findUnique({ where: { id } });
+async function getSoftwareLicenseById(id: string, organizationId?: string) {
+  return prisma.softwareLicense.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
 }
 
 async function createSoftwareLicense(data: {
@@ -198,6 +232,7 @@ async function createSoftwareLicense(data: {
   expiryDate?: string;
   annualCost?: number;
   notes?: string;
+  organizationId?: string | null;
 }) {
   const license = await prisma.softwareLicense.create({
     data: {
@@ -210,6 +245,7 @@ async function createSoftwareLicense(data: {
       expiryDate: data.expiryDate ? new Date(data.expiryDate) : undefined,
       annualCost: data.annualCost !== undefined ? new Prisma.Decimal(data.annualCost) : undefined,
       notes: data.notes?.trim(),
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
   });
 
@@ -226,7 +262,14 @@ async function updateSoftwareLicense(id: string, data: {
   annualCost?: number;
   status?: string;
   notes?: string;
-}) {
+}, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.softwareLicense.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new IctError("Software license not found", 404);
+  }
   return prisma.softwareLicense.update({
     where: { id },
     data: {
@@ -242,7 +285,14 @@ async function updateSoftwareLicense(id: string, data: {
   });
 }
 
-async function deleteSoftwareLicense(id: string) {
+async function deleteSoftwareLicense(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.softwareLicense.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new IctError("Software license not found", 404);
+  }
   await prisma.softwareLicense.delete({ where: { id } });
   logger.info(`Software license deleted: ${id}`);
 }
@@ -258,11 +308,13 @@ async function getItTickets(filters: {
   status?: string;
   assignedTo?: string;
   search?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.ItTicketWhereInput = {};
   if (filters.category) where.category = filters.category;
   if (filters.priority) where.priority = filters.priority;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.assignedTo) where.assignedTo = { contains: filters.assignedTo, mode: "insensitive" };
   if (filters.search) {
     where.OR = [
@@ -286,8 +338,10 @@ async function getItTickets(filters: {
   return { tickets, total };
 }
 
-async function getItTicketById(id: string) {
-  return prisma.itTicket.findUnique({ where: { id } });
+async function getItTicketById(id: string, organizationId?: string) {
+  return prisma.itTicket.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
 }
 
 async function createItTicket(data: {
@@ -298,8 +352,14 @@ async function createItTicket(data: {
   priority?: string;
   reportedBy: string;
   assignedTo?: string;
+  organizationId?: string | null;
 }) {
-  const existing = await prisma.itTicket.findUnique({ where: { ticketNumber: data.ticketNumber } });
+  const existing = await prisma.itTicket.findFirst({
+    where: {
+      ticketNumber: data.ticketNumber,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
+  });
   if (existing) throw new IctError("Ticket number already exists", 409);
 
   const ticket = await prisma.itTicket.create({
@@ -311,6 +371,7 @@ async function createItTicket(data: {
       priority: data.priority || "medium",
       reportedBy: data.reportedBy.trim(),
       assignedTo: data.assignedTo?.trim(),
+      organizationId: data.organizationId ?? undefined,
     },
   });
 
@@ -326,8 +387,10 @@ async function updateItTicket(id: string, data: {
   status?: string;
   assignedTo?: string;
   resolution?: string;
-}) {
-  const existing = await prisma.itTicket.findUnique({ where: { id } });
+}, organizationId?: string) {
+  const existing = await prisma.itTicket.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new IctError("Ticket not found", 404);
 
   const isResolving = data.status && ["resolved", "closed"].includes(data.status) && !["resolved", "closed"].includes(existing.status);
@@ -347,19 +410,27 @@ async function updateItTicket(id: string, data: {
   });
 }
 
-async function deleteItTicket(id: string) {
+async function deleteItTicket(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.itTicket.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new IctError("Ticket not found", 404);
+  }
   await prisma.itTicket.delete({ where: { id } });
   logger.info(`IT ticket deleted: ${id}`);
 }
 
-async function getTicketStats() {
+async function getTicketStats(organizationId?: string) {
+  const baseWhere: Prisma.ItTicketWhereInput = organizationId ? { organizationId } : {};
   const [total, byStatus, byPriority, byCategory, avgResolutionTime] = await Promise.all([
-    prisma.itTicket.count(),
-    prisma.itTicket.groupBy({ by: ["status"], _count: true }),
-    prisma.itTicket.groupBy({ by: ["priority"], _count: true }),
-    prisma.itTicket.groupBy({ by: ["category"], _count: true, orderBy: { _count: { category: "desc" } } }),
+    prisma.itTicket.count({ where: baseWhere }),
+    prisma.itTicket.groupBy({ by: ["status"], where: baseWhere, _count: true }),
+    prisma.itTicket.groupBy({ by: ["priority"], where: baseWhere, _count: true }),
+    prisma.itTicket.groupBy({ by: ["category"], where: baseWhere, _count: true, orderBy: { _count: { category: "desc" } } }),
     prisma.itTicket.findMany({
-      where: { resolvedAt: { not: null } },
+      where: { ...baseWhere, resolvedAt: { not: null } },
       select: { createdAt: true, resolvedAt: true },
     }),
   ]);
@@ -387,8 +458,8 @@ async function getTicketStats() {
   };
 }
 
-async function getTicketSummary() {
-  return getTicketStats();
+async function getTicketSummary(organizationId?: string) {
+  return getTicketStats(organizationId);
 }
 
 // ─── NETWORK DEVICES ───────────────────────────────────────
@@ -400,10 +471,12 @@ async function getNetworkDevices(filters: {
   type?: string;
   status?: string;
   search?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.NetworkDeviceWhereInput = {};
   if (filters.type) where.type = filters.type;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { name: { contains: filters.search, mode: "insensitive" } },
@@ -425,9 +498,9 @@ async function getNetworkDevices(filters: {
   return { devices, total };
 }
 
-async function getNetworkDeviceById(id: string) {
-  return prisma.networkDevice.findUnique({
-    where: { id },
+async function getNetworkDeviceById(id: string, organizationId?: string) {
+  return prisma.networkDevice.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       healthLogs: {
         take: 50,
@@ -445,6 +518,7 @@ async function createNetworkDevice(data: {
   location?: string;
   manufacturer?: string;
   firmware?: string;
+  organizationId?: string | null;
 }) {
   const device = await prisma.networkDevice.create({
     data: {
@@ -456,6 +530,7 @@ async function createNetworkDevice(data: {
       manufacturer: data.manufacturer?.trim(),
       firmware: data.firmware?.trim(),
       lastSeen: new Date(),
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
   });
 
@@ -471,7 +546,14 @@ async function updateNetworkDevice(id: string, data: {
   location?: string;
   status?: string;
   firmware?: string;
-}) {
+}, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.networkDevice.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new IctError("Network device not found", 404);
+  }
   return prisma.networkDevice.update({
     where: { id },
     data: {
@@ -486,7 +568,14 @@ async function updateNetworkDevice(id: string, data: {
   });
 }
 
-async function deleteNetworkDevice(id: string) {
+async function deleteNetworkDevice(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.networkDevice.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new IctError("Network device not found", 404);
+  }
   await prisma.systemHealthLog.deleteMany({ where: { deviceId: id } });
   await prisma.networkDevice.delete({ where: { id } });
   logger.info(`Network device deleted: ${id}`);
@@ -503,11 +592,13 @@ async function getSystemHealthLogs(filters: {
   status?: string;
   startDate?: string;
   endDate?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.SystemHealthLogWhereInput = {};
   if (filters.deviceId) where.deviceId = filters.deviceId;
   if (filters.metricName) where.metricName = filters.metricName;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.device = { organizationId: filters.organizationId };
   if (filters.startDate || filters.endDate) {
     where.recordedAt = {};
     if (filters.startDate) where.recordedAt.gte = new Date(filters.startDate);
@@ -534,7 +625,17 @@ async function createSystemHealthLog(data: {
   metricValue: number;
   unit?: string;
   status?: string;
+  organizationId?: string;
 }) {
+  // Verify device ownership if scope is supplied
+  if (data.deviceId && data.organizationId) {
+    const device = await prisma.networkDevice.findFirst({
+      where: { id: data.deviceId, organizationId: data.organizationId },
+      select: { id: true },
+    });
+    if (!device) throw new IctError("Network device not found", 404);
+  }
+
   const log = await prisma.systemHealthLog.create({
     data: {
       deviceId: data.deviceId,

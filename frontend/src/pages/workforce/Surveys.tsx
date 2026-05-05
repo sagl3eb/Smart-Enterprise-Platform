@@ -91,7 +91,7 @@ export default function Surveys() {
   };
 
   return (
-    <PageWrapper title="Workforce Surveys" subtitle="Workforce Analytics — Create and manage surveys">
+    <PageWrapper title="Workforce Surveys" subtitle="Workforce Analytics - Create and manage surveys">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex justify-between items-center mb-6">

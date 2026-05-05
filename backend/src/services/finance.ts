@@ -4,10 +4,15 @@ import logger from "../utils/logger";
 
 // ─── BUDGET CATEGORIES ─────────────────────────────────────
 
-async function getBudgetCategories(filters: { isActive?: boolean; type?: string }) {
+async function getBudgetCategories(filters: {
+  isActive?: boolean;
+  type?: string;
+  organizationId?: string;
+}) {
   const where: Prisma.BudgetCategoryWhereInput = {};
   if (filters.isActive !== undefined) where.isActive = filters.isActive;
   if (filters.type) where.type = filters.type;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   return prisma.budgetCategory.findMany({
     where,
@@ -20,6 +25,7 @@ async function createBudgetCategory(data: {
   code: string;
   type: string;
   description?: string;
+  organizationId?: string | null;
 }) {
   const category = await prisma.budgetCategory.create({
     data: {
@@ -27,6 +33,7 @@ async function createBudgetCategory(data: {
       code: data.code.toUpperCase().trim(),
       type: data.type,
       description: data.description?.trim(),
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
   });
   logger.info(`Budget category created: ${category.name}`);
@@ -35,8 +42,16 @@ async function createBudgetCategory(data: {
 
 async function updateBudgetCategory(
   id: string,
-  data: { name?: string; description?: string; isActive?: boolean }
+  data: { name?: string; description?: string; isActive?: boolean },
+  organizationId?: string
 ) {
+  if (organizationId) {
+    const owned = await prisma.budgetCategory.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new FinanceError("Budget category not found", 404);
+  }
   return prisma.budgetCategory.update({
     where: { id },
     data: {
@@ -56,11 +71,13 @@ async function getAnnualBudgets(filters: {
   fiscalYear?: number;
   categoryId?: string;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.AnnualBudgetWhereInput = {};
   if (filters.fiscalYear) where.fiscalYear = filters.fiscalYear;
   if (filters.categoryId) where.categoryId = filters.categoryId;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   const [budgets, total] = await Promise.all([
     prisma.annualBudget.findMany({
@@ -78,9 +95,9 @@ async function getAnnualBudgets(filters: {
   return { budgets, total };
 }
 
-async function getAnnualBudgetById(id: string) {
-  return prisma.annualBudget.findUnique({
-    where: { id },
+async function getAnnualBudgetById(id: string, organizationId?: string) {
+  return prisma.annualBudget.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       category: true,
     },
@@ -92,6 +109,7 @@ async function createAnnualBudget(data: {
   fiscalYear: number;
   allocatedAmount: number;
   notes?: string;
+  organizationId?: string | null;
 }) {
   const existing = await prisma.annualBudget.findUnique({
     where: {
@@ -109,8 +127,11 @@ async function createAnnualBudget(data: {
     );
   }
 
-  const category = await prisma.budgetCategory.findUnique({
-    where: { id: data.categoryId },
+  const category = await prisma.budgetCategory.findFirst({
+    where: {
+      id: data.categoryId,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
   });
   if (!category) throw new FinanceError("Budget category not found", 404);
 
@@ -122,6 +143,7 @@ async function createAnnualBudget(data: {
       spentAmount: new Prisma.Decimal(0),
       remainingAmount: new Prisma.Decimal(data.allocatedAmount),
       notes: data.notes?.trim(),
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
     include: { category: true },
   });
@@ -132,9 +154,12 @@ async function createAnnualBudget(data: {
 
 async function updateAnnualBudget(
   id: string,
-  data: { allocatedAmount?: number; status?: string; notes?: string }
+  data: { allocatedAmount?: number; status?: string; notes?: string },
+  organizationId?: string
 ) {
-  const existing = await prisma.annualBudget.findUnique({ where: { id } });
+  const existing = await prisma.annualBudget.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new FinanceError("Budget not found", 404);
 
   const updateData: Prisma.AnnualBudgetUpdateInput = {};
@@ -155,11 +180,40 @@ async function updateAnnualBudget(
   });
 }
 
-async function getBudgetSummary(fiscalYear?: number) {
+async function getBudgetSummary(fiscalYear?: number, organizationId?: string) {
   const year = fiscalYear || new Date().getFullYear();
 
+  // Auto-create a zero-allocated AnnualBudget for any BudgetCategory that
+  // doesn't yet have one this fiscal year. Keeps the Finance page consistent
+  // across orgs — every category shows up in the summary even before the
+  // admin has set its allocation.
+  if (organizationId) {
+    const [allCats, existing] = await Promise.all([
+      prisma.budgetCategory.findMany({ where: { organizationId, isActive: true }, select: { id: true } }),
+      prisma.annualBudget.findMany({ where: { organizationId, fiscalYear: year }, select: { categoryId: true } }),
+    ]);
+    const have = new Set(existing.map((b) => b.categoryId));
+    const missing = allCats.filter((c) => !have.has(c.id));
+    if (missing.length > 0) {
+      await prisma.annualBudget.createMany({
+        data: missing.map((c) => ({
+          organizationId,
+          fiscalYear: year,
+          categoryId: c.id,
+          allocatedAmount: new Prisma.Decimal(0),
+          spentAmount: new Prisma.Decimal(0),
+          remainingAmount: new Prisma.Decimal(0),
+        })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
   const budgets = await prisma.annualBudget.findMany({
-    where: { fiscalYear: year },
+    where: {
+      fiscalYear: year,
+      ...(organizationId ? { organizationId } : {}),
+    },
     include: { category: true },
   });
 
@@ -215,6 +269,7 @@ async function getTransactions(filters: {
   search?: string;
   minAmount?: number;
   maxAmount?: number;
+  organizationId?: string;
 }) {
   const where: Prisma.TransactionWhereInput = {};
 
@@ -222,6 +277,7 @@ async function getTransactions(filters: {
   if (filters.category) where.category = { contains: filters.category, mode: "insensitive" };
   if (filters.costCenterId) where.costCenterId = filters.costCenterId;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { description: { contains: filters.search, mode: "insensitive" } },
@@ -258,9 +314,9 @@ async function getTransactions(filters: {
   return { transactions, total };
 }
 
-async function getTransactionById(id: string) {
-  return prisma.transaction.findUnique({
-    where: { id },
+async function getTransactionById(id: string, organizationId?: string) {
+  return prisma.transaction.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: { costCenter: true },
   });
 }
@@ -275,6 +331,7 @@ async function createTransaction(data: {
   costCenterId?: string;
   transactionDate: string;
   createdBy?: string;
+  organizationId?: string | null;
 }) {
   const transaction = await prisma.transaction.create({
     data: {
@@ -287,6 +344,7 @@ async function createTransaction(data: {
       costCenterId: data.costCenterId,
       transactionDate: new Date(data.transactionDate),
       createdBy: data.createdBy,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
     include: { costCenter: { select: { id: true, name: true, code: true } } },
   });
@@ -297,17 +355,20 @@ async function createTransaction(data: {
     const budgets = await prisma.annualBudget.findMany({
       where: {
         fiscalYear: year,
+        ...(data.organizationId ? { organizationId: data.organizationId } : {}),
         category: { name: { equals: data.category, mode: "insensitive" } },
       },
     });
 
     for (const budget of budgets) {
-      const newSpent = budget.spentAmount.add(new Prisma.Decimal(data.amount));
+      const currentSpent = new Prisma.Decimal(budget.spentAmount.toString());
+      const allocated = new Prisma.Decimal(budget.allocatedAmount.toString());
+      const newSpent = currentSpent.add(new Prisma.Decimal(data.amount));
       await prisma.annualBudget.update({
         where: { id: budget.id },
         data: {
           spentAmount: newSpent,
-          remainingAmount: budget.allocatedAmount.minus(newSpent),
+          remainingAmount: allocated.minus(newSpent),
         },
       });
     }
@@ -327,9 +388,12 @@ async function updateTransaction(
     reference?: string;
     costCenterId?: string;
     status?: string;
-  }
+  },
+  organizationId?: string
 ) {
-  const existing = await prisma.transaction.findUnique({ where: { id } });
+  const existing = await prisma.transaction.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new FinanceError("Transaction not found", 404);
 
   return prisma.transaction.update({
@@ -347,16 +411,23 @@ async function updateTransaction(
   });
 }
 
-async function deleteTransaction(id: string) {
-  const existing = await prisma.transaction.findUnique({ where: { id } });
+async function deleteTransaction(id: string, organizationId?: string) {
+  const existing = await prisma.transaction.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) throw new FinanceError("Transaction not found", 404);
 
   await prisma.transaction.delete({ where: { id } });
   logger.info(`Transaction deleted: ${id}`);
 }
 
-async function getTransactionStats(startDate?: string, endDate?: string) {
+async function getTransactionStats(
+  startDate?: string,
+  endDate?: string,
+  organizationId?: string
+) {
   const where: Prisma.TransactionWhereInput = { status: "completed" };
+  if (organizationId) where.organizationId = organizationId;
 
   if (startDate || endDate) {
     where.transactionDate = {};
@@ -416,10 +487,12 @@ async function getFinancialReports(filters: {
   skip: number;
   type?: string;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.FinancialReportWhereInput = {};
   if (filters.type) where.type = filters.type;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   const [reports, total] = await Promise.all([
     prisma.financialReport.findMany({
@@ -434,8 +507,10 @@ async function getFinancialReports(filters: {
   return { reports, total };
 }
 
-async function getFinancialReportById(id: string) {
-  return prisma.financialReport.findUnique({ where: { id } });
+async function getFinancialReportById(id: string, organizationId?: string) {
+  return prisma.financialReport.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
 }
 
 async function generateFinancialReport(data: {
@@ -444,6 +519,7 @@ async function generateFinancialReport(data: {
   periodStart: string;
   periodEnd: string;
   generatedBy?: string;
+  organizationId?: string | null;
 }) {
   const start = new Date(data.periodStart);
   const end = new Date(data.periodEnd);
@@ -452,6 +528,7 @@ async function generateFinancialReport(data: {
     where: {
       transactionDate: { gte: start, lte: end },
       status: "completed",
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
     include: { costCenter: true },
   });
@@ -493,6 +570,7 @@ async function generateFinancialReport(data: {
       data: reportData as Prisma.InputJsonValue,
       generatedBy: data.generatedBy,
       status: "final",
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
   });
 
@@ -502,10 +580,44 @@ async function generateFinancialReport(data: {
 
 // ─── COST CENTERS ──────────────────────────────────────────
 
-async function getCostCenters(filters: { isActive?: boolean; departmentId?: string }) {
+const DEFAULT_COST_CENTERS = [
+  { name: "Engineering", code: "CC-ENG", limit: 600000 },
+  { name: "Sales", code: "CC-SAL", limit: 450000 },
+  { name: "Marketing", code: "CC-MKT", limit: 300000 },
+  { name: "Operations", code: "CC-OPS", limit: 200000 },
+  { name: "HR & Admin", code: "CC-HR", limit: 150000 },
+];
+
+async function getCostCenters(filters: {
+  isActive?: boolean;
+  departmentId?: string;
+  organizationId?: string;
+}) {
+  // Auto-seed default cost centers for any org that has none yet so the
+  // Finance admin page is never empty after a fresh org create.
+  if (filters.organizationId) {
+    const count = await prisma.costCenter.count({ where: { organizationId: filters.organizationId } });
+    if (count === 0) {
+      for (const cc of DEFAULT_COST_CENTERS) {
+        try {
+          await prisma.costCenter.create({
+            data: {
+              organizationId: filters.organizationId,
+              name: cc.name,
+              code: cc.code,
+              budgetLimit: new Prisma.Decimal(cc.limit),
+              isActive: true,
+            },
+          });
+        } catch { /* unique-constraint race — ignore */ }
+      }
+    }
+  }
+
   const where: Prisma.CostCenterWhereInput = {};
   if (filters.isActive !== undefined) where.isActive = filters.isActive;
   if (filters.departmentId) where.departmentId = filters.departmentId;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   return prisma.costCenter.findMany({
     where,
@@ -522,6 +634,7 @@ async function createCostCenter(data: {
   code: string;
   departmentId?: string;
   budgetLimit?: number;
+  organizationId?: string | null;
 }) {
   const costCenter = await prisma.costCenter.create({
     data: {
@@ -531,6 +644,7 @@ async function createCostCenter(data: {
       budgetLimit: data.budgetLimit !== undefined
         ? new Prisma.Decimal(data.budgetLimit)
         : undefined,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
     include: { department: { select: { id: true, name: true } } },
   });
@@ -541,8 +655,16 @@ async function createCostCenter(data: {
 
 async function updateCostCenter(
   id: string,
-  data: { name?: string; departmentId?: string; budgetLimit?: number; isActive?: boolean }
+  data: { name?: string; departmentId?: string; budgetLimit?: number; isActive?: boolean },
+  organizationId?: string
 ) {
+  if (organizationId) {
+    const owned = await prisma.costCenter.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new FinanceError("Cost center not found", 404);
+  }
   return prisma.costCenter.update({
     where: { id },
     data: {
@@ -555,7 +677,14 @@ async function updateCostCenter(
   });
 }
 
-async function deleteCostCenter(id: string) {
+async function deleteCostCenter(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.costCenter.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new FinanceError("Cost center not found", 404);
+  }
   const txCount = await prisma.transaction.count({ where: { costCenterId: id } });
   if (txCount > 0) {
     throw new FinanceError(
@@ -569,11 +698,14 @@ async function deleteCostCenter(id: string) {
 
 // ─── VARIANCE ANALYSIS ────────────────────────────────────
 
-async function getVarianceAnalysis(fiscalYear?: number) {
+async function getVarianceAnalysis(fiscalYear?: number, organizationId?: string) {
   const year = fiscalYear || new Date().getFullYear();
 
   const budgets = await prisma.annualBudget.findMany({
-    where: { fiscalYear: year },
+    where: {
+      fiscalYear: year,
+      ...(organizationId ? { organizationId } : {}),
+    },
     include: { category: true },
   });
 

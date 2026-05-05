@@ -1,31 +1,31 @@
 import { Router } from "express";
 import workforceController from "../controllers/workforce";
 import { authenticate } from "../middleware/auth";
-import { requireMinRole } from "../middleware/rbac";
+import { attachScope } from "../middleware/callerScope";
+import { blockViewerWrites, blockSuperAdminModuleWrites } from "../middleware/rbac";
 
 const router = Router();
 router.use(authenticate);
+router.use(attachScope);
+router.use(blockViewerWrites);
+router.use(blockSuperAdminModuleWrites);
 
-// ─── Attrition ─────────────────────────────────────────────
 router.get("/attrition", workforceController.getAttritionPredictions);
 router.get("/attrition/summary", workforceController.getAttritionSummary);
-router.post("/attrition", requireMinRole("manager"), workforceController.createAttritionPrediction);
-router.post("/attrition/bulk", requireMinRole("manager"), workforceController.bulkCreateAttritionPredictions);
+router.post("/attrition", workforceController.createAttritionPrediction);
+router.post("/attrition/bulk", workforceController.bulkCreateAttritionPredictions);
 
-// ─── Snapshots ─────────────────────────────────────────────
 router.get("/snapshots", workforceController.getWorkforceSnapshots);
-router.post("/snapshots", requireMinRole("manager"), workforceController.createWorkforceSnapshot);
+router.post("/snapshots", workforceController.createWorkforceSnapshot);
 
-// ─── Trends & Comparison ───────────────────────────────────
 router.get("/satisfaction-trends", workforceController.getSatisfactionTrends);
 router.get("/department-comparison", workforceController.getDepartmentComparison);
 
-// ─── Surveys ───────────────────────────────────────────────
 router.get("/surveys", workforceController.getSurveys);
 router.get("/surveys/:id", workforceController.getSurveyById);
-router.get("/surveys/:id/results", requireMinRole("manager"), workforceController.getSurveyResults);
-router.post("/surveys", requireMinRole("manager"), workforceController.createSurvey);
-router.put("/surveys/:id/status", requireMinRole("manager"), workforceController.updateSurveyStatus);
+router.get("/surveys/:id/results", workforceController.getSurveyResults);
+router.post("/surveys", workforceController.createSurvey);
+router.put("/surveys/:id/status", workforceController.updateSurveyStatus);
 router.post("/surveys/:id/respond", workforceController.submitSurveyResponse);
 
 export default router;

@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth";
+import { ScopedRequest, readOrgFilter, writeOrgId } from "../middleware/callerScope";
 import dashboardService, { DashboardError } from "../services/dashboard";
 import {
   sendSuccess, sendCreated, sendError,
@@ -7,67 +7,85 @@ import {
 } from "../utils/response";
 import logger from "../utils/logger";
 
-async function getKpiDefinitions(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getKpiDefinitions(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { module, isActive } = req.query;
     const kpis = await dashboardService.getKpiDefinitions({
       module: module as string,
       isActive: isActive !== undefined ? isActive === "true" : undefined,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
     sendSuccess(res, kpis, "KPI definitions retrieved");
   } catch (error) { logger.error("Get KPIs error:", error); sendError(res, "Failed to retrieve KPIs"); }
 }
 
-async function createKpiDefinition(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createKpiDefinition(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, module, metric } = req.body;
+    const { name, module, metric, organizationId: bodyOrgId } = req.body;
     if (!name || !module || !metric) { sendBadRequest(res, "Required: name, module, metric"); return; }
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
     const kpi = await dashboardService.createKpiDefinition({
-      ...req.body, target: req.body.target !== undefined ? Number(req.body.target) : undefined,
+      ...req.body,
+      target: req.body.target !== undefined ? Number(req.body.target) : undefined,
+      organizationId: orgId,
     });
     sendCreated(res, kpi, "KPI created");
   } catch (error) { logger.error("Create KPI error:", error); sendError(res, "Failed to create KPI"); }
 }
 
-async function updateKpiDefinition(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateKpiDefinition(req: ScopedRequest, res: Response): Promise<void> {
   try {
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const kpi = await dashboardService.updateKpiDefinition(req.params.id, {
       ...req.body, target: req.body.target !== undefined ? Number(req.body.target) : undefined,
-    });
+    }, orgFilter);
     sendSuccess(res, kpi, "KPI updated");
-  } catch (error) { logger.error("Update KPI error:", error); sendError(res, "Failed to update KPI"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Update KPI error:", error); sendError(res, "Failed to update KPI");
+  }
 }
 
-async function recordKpiSnapshot(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function recordKpiSnapshot(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { kpiId, value, snapshotDate } = req.body;
     if (!kpiId || value === undefined || !snapshotDate) {
       sendBadRequest(res, "Required: kpiId, value, snapshotDate"); return;
     }
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const snapshot = await dashboardService.recordKpiSnapshot({
       kpiId, value: Number(value), snapshotDate,
       previousValue: req.body.previousValue !== undefined ? Number(req.body.previousValue) : undefined,
+      organizationId: orgFilter,
     });
     sendCreated(res, snapshot, "KPI snapshot recorded");
-  } catch (error) { logger.error("Record snapshot error:", error); sendError(res, "Failed to record snapshot"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Record snapshot error:", error); sendError(res, "Failed to record snapshot");
+  }
 }
 
-async function getLatestKpis(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getLatestKpis(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const kpis = await dashboardService.getLatestKpis();
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const kpis = await dashboardService.getLatestKpis(orgFilter);
     sendSuccess(res, kpis, "Latest KPIs retrieved");
   } catch (error) { logger.error("Latest KPIs error:", error); sendError(res, "Failed to retrieve latest KPIs"); }
 }
 
-async function getKpiHistory(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getKpiHistory(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const days = req.query.days ? parseInt(req.query.days as string, 10) : 90;
-    const history = await dashboardService.getKpiHistory(req.params.id, days);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const history = await dashboardService.getKpiHistory(req.params.id, days, orgFilter);
     sendSuccess(res, history, "KPI history retrieved");
-  } catch (error) { logger.error("KPI history error:", error); sendError(res, "Failed to retrieve KPI history"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("KPI history error:", error); sendError(res, "Failed to retrieve KPI history");
+  }
 }
 
-async function getDashboardLayouts(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getDashboardLayouts(req: ScopedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) { sendError(res, "Unauthorized", 401); return; }
     const layouts = await dashboardService.getDashboardLayouts(req.user.userId);
@@ -75,15 +93,16 @@ async function getDashboardLayouts(req: AuthenticatedRequest, res: Response): Pr
   } catch (error) { logger.error("Get layouts error:", error); sendError(res, "Failed to retrieve layouts"); }
 }
 
-async function getDashboardLayoutById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getDashboardLayoutById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const layout = await dashboardService.getDashboardLayoutById(req.params.id);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    const layout = await dashboardService.getDashboardLayoutById(req.params.id, userId);
     if (!layout) { sendNotFound(res, "Dashboard layout"); return; }
     sendSuccess(res, layout, "Layout retrieved");
   } catch (error) { logger.error("Get layout error:", error); sendError(res, "Failed to retrieve layout"); }
 }
 
-async function createDashboardLayout(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createDashboardLayout(req: ScopedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) { sendError(res, "Unauthorized", 401); return; }
     const { name, layout } = req.body;
@@ -95,9 +114,10 @@ async function createDashboardLayout(req: AuthenticatedRequest, res: Response): 
   } catch (error) { logger.error("Create layout error:", error); sendError(res, "Failed to create layout"); }
 }
 
-async function updateDashboardLayout(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateDashboardLayout(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const layout = await dashboardService.updateDashboardLayout(req.params.id, req.body);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    const layout = await dashboardService.updateDashboardLayout(req.params.id, req.body, userId);
     sendSuccess(res, layout, "Layout updated");
   } catch (error) {
     if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
@@ -105,43 +125,68 @@ async function updateDashboardLayout(req: AuthenticatedRequest, res: Response): 
   }
 }
 
-async function deleteDashboardLayout(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteDashboardLayout(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await dashboardService.deleteDashboardLayout(req.params.id);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    await dashboardService.deleteDashboardLayout(req.params.id, userId);
     sendSuccess(res, null, "Layout deleted");
-  } catch (error) { logger.error("Delete layout error:", error); sendError(res, "Failed to delete layout"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Delete layout error:", error); sendError(res, "Failed to delete layout");
+  }
 }
 
-async function addWidget(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function addWidget(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { layoutId, widgetType, title, config, position, size } = req.body;
     if (!layoutId || !widgetType || !title || !config || !position || !size) {
       sendBadRequest(res, "Required: layoutId, widgetType, title, config, position, size"); return;
     }
-    const widget = await dashboardService.addWidget(req.body);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    const widget = await dashboardService.addWidget(req.body, userId);
     sendCreated(res, widget, "Widget added");
-  } catch (error) { logger.error("Add widget error:", error); sendError(res, "Failed to add widget"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Add widget error:", error); sendError(res, "Failed to add widget");
+  }
 }
 
-async function updateWidget(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateWidget(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const widget = await dashboardService.updateWidget(req.params.id, req.body);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    const widget = await dashboardService.updateWidget(req.params.id, req.body, userId);
     sendSuccess(res, widget, "Widget updated");
-  } catch (error) { logger.error("Update widget error:", error); sendError(res, "Failed to update widget"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Update widget error:", error); sendError(res, "Failed to update widget");
+  }
 }
 
-async function deleteWidget(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteWidget(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await dashboardService.deleteWidget(req.params.id);
+    const userId = req.scope && !req.scope.isSuper ? req.scope.userId : undefined;
+    await dashboardService.deleteWidget(req.params.id, userId);
     sendSuccess(res, null, "Widget deleted");
-  } catch (error) { logger.error("Delete widget error:", error); sendError(res, "Failed to delete widget"); }
+  } catch (error) {
+    if (error instanceof DashboardError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Delete widget error:", error); sendError(res, "Failed to delete widget");
+  }
 }
 
-async function getExecutiveSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getExecutiveSummary(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const summary = await dashboardService.getExecutiveSummary();
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const summary = await dashboardService.getExecutiveSummary(orgFilter);
     sendSuccess(res, summary, "Executive summary retrieved");
   } catch (error) { logger.error("Executive summary error:", error); sendError(res, "Failed to retrieve executive summary"); }
+}
+
+async function getDashboardCharts(req: ScopedRequest, res: Response): Promise<void> {
+  try {
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const charts = await dashboardService.getDashboardCharts(orgFilter);
+    sendSuccess(res, charts, "Dashboard charts retrieved");
+  } catch (error) { logger.error("Dashboard charts error:", error); sendError(res, "Failed to retrieve dashboard charts"); }
 }
 
 const dashboardController = {
@@ -149,7 +194,7 @@ const dashboardController = {
   recordKpiSnapshot, getLatestKpis, getKpiHistory,
   getDashboardLayouts, getDashboardLayoutById, createDashboardLayout, updateDashboardLayout, deleteDashboardLayout,
   addWidget, updateWidget, deleteWidget,
-  getExecutiveSummary,
+  getExecutiveSummary, getDashboardCharts,
 };
 
 export default dashboardController;

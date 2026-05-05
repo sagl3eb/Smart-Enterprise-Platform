@@ -1,6 +1,6 @@
 import { Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth";
 import hrService, { HrError } from "../services/hr";
+import { ScopedRequest, readOrgFilter, writeOrgId } from "../middleware/callerScope";
 import {
   sendSuccess,
   sendCreated,
@@ -14,13 +14,14 @@ import logger from "../utils/logger";
 
 // ─── DEPARTMENTS ───────────────────────────────────────────
 
-async function getDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getDepartments(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { isActive, search } = req.query;
 
     const departments = await hrService.getDepartments({
       isActive: isActive !== undefined ? isActive === "true" : undefined,
       search: search as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendSuccess(res, departments, "Departments retrieved");
@@ -30,9 +31,12 @@ async function getDepartments(req: AuthenticatedRequest, res: Response): Promise
   }
 }
 
-async function getDepartmentById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getDepartmentById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const department = await hrService.getDepartmentById(req.params.id);
+    const department = await hrService.getDepartmentById(
+      req.params.id,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
 
     if (!department) {
       sendNotFound(res, "Department");
@@ -46,14 +50,16 @@ async function getDepartmentById(req: AuthenticatedRequest, res: Response): Prom
   }
 }
 
-async function createDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createDepartment(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, code, description, managerId, parentId } = req.body;
+    const { name, code, description, managerId, parentId, organizationId: bodyOrgId } = req.body;
 
     if (!name || !code) {
       sendBadRequest(res, "Name and code are required");
       return;
     }
+
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
 
     const department = await hrService.createDepartment({
       name,
@@ -61,6 +67,7 @@ async function createDepartment(req: AuthenticatedRequest, res: Response): Promi
       description,
       managerId,
       parentId,
+      organizationId: orgId,
     });
 
     sendCreated(res, department, "Department created");
@@ -78,9 +85,13 @@ async function createDepartment(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function updateDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateDepartment(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const department = await hrService.updateDepartment(req.params.id, req.body);
+    const department = await hrService.updateDepartment(
+      req.params.id,
+      req.body,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendSuccess(res, department, "Department updated");
   } catch (error) {
     if (error instanceof HrError) {
@@ -92,9 +103,12 @@ async function updateDepartment(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function deleteDepartment(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteDepartment(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await hrService.deleteDepartment(req.params.id);
+    await hrService.deleteDepartment(
+      req.params.id,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendSuccess(res, null, "Department deleted");
   } catch (error) {
     if (error instanceof HrError) {
@@ -108,7 +122,7 @@ async function deleteDepartment(req: AuthenticatedRequest, res: Response): Promi
 
 // ─── EMPLOYEES ─────────────────────────────────────────────
 
-async function getEmployees(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getEmployees(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { departmentId, status, employmentType, search, sortBy, sortOrder } = req.query;
@@ -123,6 +137,7 @@ async function getEmployees(req: AuthenticatedRequest, res: Response): Promise<v
       search: search as string,
       sortBy: sortBy as string,
       sortOrder: sortOrder as "asc" | "desc",
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.employees, result.total, page, limit, "Employees retrieved");
@@ -132,9 +147,12 @@ async function getEmployees(req: AuthenticatedRequest, res: Response): Promise<v
   }
 }
 
-async function getEmployeeById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getEmployeeById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const employee = await hrService.getEmployeeById(req.params.id);
+    const employee = await hrService.getEmployeeById(
+      req.params.id,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
 
     if (!employee) {
       sendNotFound(res, "Employee");
@@ -148,23 +166,27 @@ async function getEmployeeById(req: AuthenticatedRequest, res: Response): Promis
   }
 }
 
-async function createEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createEmployee(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const {
       employeeCode, departmentId, firstName, lastName, email,
       phone, position, hireDate, salary, employmentType,
       managerId, dateOfBirth, address, emergencyContact, userId,
+      organizationId: bodyOrgId,
     } = req.body;
 
-    if (!employeeCode || !departmentId || !firstName || !lastName || !email || !position || !hireDate || salary === undefined) {
-      sendBadRequest(res, "Required fields: employeeCode, departmentId, firstName, lastName, email, position, hireDate, salary");
+    if (!departmentId || !firstName || !lastName || !email || !position || !hireDate || salary === undefined) {
+      sendBadRequest(res, "Required fields: departmentId, firstName, lastName, email, position, hireDate, salary");
       return;
     }
+
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
 
     const employee = await hrService.createEmployee({
       employeeCode, departmentId, firstName, lastName, email,
       phone, position, hireDate, salary: Number(salary), employmentType,
       managerId, dateOfBirth, address, emergencyContact, userId,
+      organizationId: orgId,
     });
 
     sendCreated(res, employee, "Employee created");
@@ -178,12 +200,16 @@ async function createEmployee(req: AuthenticatedRequest, res: Response): Promise
   }
 }
 
-async function updateEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateEmployee(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const employee = await hrService.updateEmployee(req.params.id, {
-      ...req.body,
-      salary: req.body.salary !== undefined ? Number(req.body.salary) : undefined,
-    });
+    const employee = await hrService.updateEmployee(
+      req.params.id,
+      {
+        ...req.body,
+        salary: req.body.salary !== undefined ? Number(req.body.salary) : undefined,
+      },
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
 
     sendSuccess(res, employee, "Employee updated");
   } catch (error) {
@@ -196,9 +222,12 @@ async function updateEmployee(req: AuthenticatedRequest, res: Response): Promise
   }
 }
 
-async function deleteEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteEmployee(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await hrService.deleteEmployee(req.params.id);
+    await hrService.deleteEmployee(
+      req.params.id,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendSuccess(res, null, "Employee terminated");
   } catch (error) {
     if (error instanceof HrError) {
@@ -212,7 +241,7 @@ async function deleteEmployee(req: AuthenticatedRequest, res: Response): Promise
 
 // ─── ATTENDANCE ────────────────────────────────────────────
 
-async function getAttendance(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getAttendance(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { employeeId, departmentId, startDate, endDate, status } = req.query;
@@ -226,6 +255,7 @@ async function getAttendance(req: AuthenticatedRequest, res: Response): Promise<
       startDate: startDate as string,
       endDate: endDate as string,
       status: status as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.records, result.total, page, limit, "Attendance retrieved");
@@ -235,7 +265,7 @@ async function getAttendance(req: AuthenticatedRequest, res: Response): Promise<
   }
 }
 
-async function recordAttendance(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function recordAttendance(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { employeeId, date, checkIn, checkOut, status, hoursWorked, overtime, notes } = req.body;
 
@@ -253,7 +283,7 @@ async function recordAttendance(req: AuthenticatedRequest, res: Response): Promi
       hoursWorked: hoursWorked !== undefined ? Number(hoursWorked) : undefined,
       overtime: overtime !== undefined ? Number(overtime) : undefined,
       notes,
-    });
+    }, req.scope ? readOrgFilter(req.scope) : undefined);
 
     sendCreated(res, record, "Attendance recorded");
   } catch (error) {
@@ -266,7 +296,7 @@ async function recordAttendance(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function bulkRecordAttendance(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function bulkRecordAttendance(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { records } = req.body;
 
@@ -275,7 +305,10 @@ async function bulkRecordAttendance(req: AuthenticatedRequest, res: Response): P
       return;
     }
 
-    const results = await hrService.bulkRecordAttendance(records);
+    const results = await hrService.bulkRecordAttendance(
+      records,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendCreated(res, results, `${results.length} attendance records processed`);
   } catch (error) {
     if (error instanceof HrError) {
@@ -287,7 +320,7 @@ async function bulkRecordAttendance(req: AuthenticatedRequest, res: Response): P
   }
 }
 
-async function getAttendanceSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getAttendanceSummary(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { employeeId } = req.params;
     const { month, year } = req.query;
@@ -312,7 +345,7 @@ async function getAttendanceSummary(req: AuthenticatedRequest, res: Response): P
 
 // ─── LEAVE ─────────────────────────────────────────────────
 
-async function getLeaveTypes(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getLeaveTypes(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const types = await hrService.getLeaveTypes();
     sendSuccess(res, types, "Leave types retrieved");
@@ -322,7 +355,7 @@ async function getLeaveTypes(req: AuthenticatedRequest, res: Response): Promise<
   }
 }
 
-async function getLeaveRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getLeaveRequests(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { employeeId, status, leaveTypeId, departmentId } = req.query;
@@ -335,6 +368,7 @@ async function getLeaveRequests(req: AuthenticatedRequest, res: Response): Promi
       status: status as string,
       leaveTypeId: leaveTypeId as string,
       departmentId: departmentId as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.requests, result.total, page, limit, "Leave requests retrieved");
@@ -344,7 +378,7 @@ async function getLeaveRequests(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function createLeaveRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createLeaveRequest(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { employeeId, leaveTypeId, startDate, endDate, reason } = req.body;
 
@@ -359,7 +393,7 @@ async function createLeaveRequest(req: AuthenticatedRequest, res: Response): Pro
       startDate,
       endDate,
       reason,
-    });
+    }, req.scope ? readOrgFilter(req.scope) : undefined);
 
     sendCreated(res, request, "Leave request submitted");
   } catch (error) {
@@ -372,7 +406,7 @@ async function createLeaveRequest(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-async function approveLeaveRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function approveLeaveRequest(req: ScopedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
       sendError(res, "Unauthorized", 401);
@@ -382,7 +416,9 @@ async function approveLeaveRequest(req: AuthenticatedRequest, res: Response): Pr
     const request = await hrService.updateLeaveRequestStatus(
       req.params.id,
       "approved",
-      req.user.userId
+      req.user.userId,
+      typeof req.body?.decisionNote === "string" ? req.body.decisionNote : undefined,
+      req.scope ? readOrgFilter(req.scope) : undefined,
     );
 
     sendSuccess(res, request, "Leave request approved");
@@ -396,7 +432,7 @@ async function approveLeaveRequest(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function rejectLeaveRequest(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function rejectLeaveRequest(req: ScopedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
       sendError(res, "Unauthorized", 401);
@@ -406,7 +442,9 @@ async function rejectLeaveRequest(req: AuthenticatedRequest, res: Response): Pro
     const request = await hrService.updateLeaveRequestStatus(
       req.params.id,
       "rejected",
-      req.user.userId
+      req.user.userId,
+      typeof req.body?.decisionNote === "string" ? req.body.decisionNote : undefined,
+      req.scope ? readOrgFilter(req.scope) : undefined,
     );
 
     sendSuccess(res, request, "Leave request rejected");
@@ -420,7 +458,7 @@ async function rejectLeaveRequest(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-async function getLeaveBalance(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getLeaveBalance(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { employeeId } = req.params;
     const year = parseInt(req.query.year as string, 10) || new Date().getFullYear();
@@ -436,7 +474,7 @@ async function getLeaveBalance(req: AuthenticatedRequest, res: Response): Promis
 
 // ─── PERFORMANCE REVIEWS ───────────────────────────────────
 
-async function getPerformanceReviews(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getPerformanceReviews(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { employeeId, reviewPeriod, status } = req.query;
@@ -448,6 +486,7 @@ async function getPerformanceReviews(req: AuthenticatedRequest, res: Response): 
       employeeId: employeeId as string,
       reviewPeriod: reviewPeriod as string,
       status: status as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.reviews, result.total, page, limit, "Reviews retrieved");
@@ -457,7 +496,7 @@ async function getPerformanceReviews(req: AuthenticatedRequest, res: Response): 
   }
 }
 
-async function createPerformanceReview(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createPerformanceReview(req: ScopedRequest, res: Response): Promise<void> {
   try {
     if (!req.user) {
       sendError(res, "Unauthorized", 401);
@@ -484,7 +523,7 @@ async function createPerformanceReview(req: AuthenticatedRequest, res: Response)
       improvements,
       comments,
       reviewDate,
-    });
+    }, req.scope ? readOrgFilter(req.scope) : undefined);
 
     sendCreated(res, review, "Performance review created");
   } catch (error) {
@@ -497,12 +536,16 @@ async function createPerformanceReview(req: AuthenticatedRequest, res: Response)
   }
 }
 
-async function updatePerformanceReview(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updatePerformanceReview(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const review = await hrService.updatePerformanceReview(req.params.id, {
-      ...req.body,
-      overallScore: req.body.overallScore !== undefined ? Number(req.body.overallScore) : undefined,
-    });
+    const review = await hrService.updatePerformanceReview(
+      req.params.id,
+      {
+        ...req.body,
+        overallScore: req.body.overallScore !== undefined ? Number(req.body.overallScore) : undefined,
+      },
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
 
     sendSuccess(res, review, "Performance review updated");
   } catch (error) {
@@ -517,7 +560,7 @@ async function updatePerformanceReview(req: AuthenticatedRequest, res: Response)
 
 // ─── TRAINING ──────────────────────────────────────────────
 
-async function getTrainingPrograms(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getTrainingPrograms(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { status } = req.query;
@@ -527,6 +570,7 @@ async function getTrainingPrograms(req: AuthenticatedRequest, res: Response): Pr
       limit,
       skip,
       status: status as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.programs, result.total, page, limit, "Training programs retrieved");
@@ -536,14 +580,16 @@ async function getTrainingPrograms(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function createTrainingProgram(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createTrainingProgram(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, description, provider, startDate, endDate, maxParticipants, cost } = req.body;
+    const { name, description, provider, startDate, endDate, maxParticipants, cost, organizationId: bodyOrgId } = req.body;
 
     if (!name || !startDate || !endDate) {
       sendBadRequest(res, "Name, start date, and end date are required");
       return;
     }
+
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
 
     const program = await hrService.createTrainingProgram({
       name,
@@ -553,6 +599,7 @@ async function createTrainingProgram(req: AuthenticatedRequest, res: Response): 
       endDate,
       maxParticipants: maxParticipants ? Number(maxParticipants) : undefined,
       cost: cost !== undefined ? Number(cost) : undefined,
+      organizationId: orgId,
     });
 
     sendCreated(res, program, "Training program created");
@@ -562,7 +609,7 @@ async function createTrainingProgram(req: AuthenticatedRequest, res: Response): 
   }
 }
 
-async function enrollInTraining(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function enrollInTraining(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { employeeId, trainingProgramId } = req.body;
 
@@ -571,7 +618,10 @@ async function enrollInTraining(req: AuthenticatedRequest, res: Response): Promi
       return;
     }
 
-    const enrollment = await hrService.enrollInTraining({ employeeId, trainingProgramId });
+    const enrollment = await hrService.enrollInTraining(
+      { employeeId, trainingProgramId },
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
 
     sendCreated(res, enrollment, "Employee enrolled in training");
   } catch (error) {
@@ -586,9 +636,12 @@ async function enrollInTraining(req: AuthenticatedRequest, res: Response): Promi
 
 // ─── DOCUMENTS ─────────────────────────────────────────────
 
-async function getEmployeeDocuments(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getEmployeeDocuments(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const docs = await hrService.getEmployeeDocuments(req.params.employeeId);
+    const docs = await hrService.getEmployeeDocuments(
+      req.params.employeeId,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendSuccess(res, docs, "Documents retrieved");
   } catch (error) {
     logger.error("Get documents error:", error);
@@ -596,7 +649,7 @@ async function getEmployeeDocuments(req: AuthenticatedRequest, res: Response): P
   }
 }
 
-async function addEmployeeDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function addEmployeeDocument(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { name, type, filePath, fileSize } = req.body;
     const { employeeId } = req.params;
@@ -612,7 +665,7 @@ async function addEmployeeDocument(req: AuthenticatedRequest, res: Response): Pr
       type,
       filePath,
       fileSize: fileSize ? Number(fileSize) : undefined,
-    });
+    }, req.scope ? readOrgFilter(req.scope) : undefined);
 
     sendCreated(res, doc, "Document uploaded");
   } catch (error) {
@@ -625,11 +678,18 @@ async function addEmployeeDocument(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function deleteEmployeeDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteEmployeeDocument(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await hrService.deleteEmployeeDocument(req.params.docId);
+    await hrService.deleteEmployeeDocument(
+      req.params.docId,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
     sendSuccess(res, null, "Document deleted");
   } catch (error) {
+    if (error instanceof HrError) {
+      sendError(res, error.message, error.statusCode);
+      return;
+    }
     logger.error("Delete document error:", error);
     sendError(res, "Failed to delete document");
   }
@@ -637,9 +697,9 @@ async function deleteEmployeeDocument(req: AuthenticatedRequest, res: Response):
 
 // ─── ORG CHART & STATS ────────────────────────────────────
 
-async function getOrgChart(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getOrgChart(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const chart = await hrService.getOrgChart();
+    const chart = await hrService.getOrgChart(req.scope ? readOrgFilter(req.scope) : undefined);
     sendSuccess(res, chart, "Org chart retrieved");
   } catch (error) {
     logger.error("Org chart error:", error);
@@ -647,13 +707,75 @@ async function getOrgChart(req: AuthenticatedRequest, res: Response): Promise<vo
   }
 }
 
-async function getHrStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getHrStats(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const stats = await hrService.getHrStats();
+    const stats = await hrService.getHrStats(req.scope ? readOrgFilter(req.scope) : undefined);
     sendSuccess(res, stats, "HR statistics retrieved");
   } catch (error) {
     logger.error("HR stats error:", error);
     sendError(res, "Failed to retrieve HR statistics");
+  }
+}
+
+// ─── JOB ROLES ─────────────────────────────────────────────
+
+async function getJobRoles(req: ScopedRequest, res: Response): Promise<void> {
+  try {
+    const { isActive, search } = req.query;
+    const roles = await hrService.getJobRoles({
+      isActive: isActive === undefined ? undefined : isActive === "true",
+      search: search as string | undefined,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
+    });
+    sendSuccess(res, roles, "Job roles retrieved");
+  } catch (error) {
+    logger.error("Job roles error:", error);
+    sendError(res, "Failed to retrieve job roles");
+  }
+}
+
+async function createJobRole(req: ScopedRequest, res: Response): Promise<void> {
+  try {
+    const { name, description, level, organizationId: bodyOrgId } = req.body;
+    if (!name) { sendBadRequest(res, "Name is required"); return; }
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
+    const role = await hrService.createJobRole({ name, description, level, organizationId: orgId });
+    sendCreated(res, role, "Job role created");
+  } catch (error) {
+    if (error instanceof HrError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Create job role error:", error);
+    sendError(res, "Failed to create job role");
+  }
+}
+
+async function updateJobRole(req: ScopedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const role = await hrService.updateJobRole(
+      id,
+      req.body,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
+    sendSuccess(res, role, "Job role updated");
+  } catch (error) {
+    if (error instanceof HrError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Update job role error:", error);
+    sendError(res, "Failed to update job role");
+  }
+}
+
+async function deleteJobRole(req: ScopedRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const result = await hrService.deleteJobRole(
+      id,
+      req.scope ? readOrgFilter(req.scope) : undefined,
+    );
+    sendSuccess(res, result, result.deactivated ? "Job role deactivated (in use)" : "Job role deleted");
+  } catch (error) {
+    if (error instanceof HrError) { sendError(res, error.message, error.statusCode); return; }
+    logger.error("Delete job role error:", error);
+    sendError(res, "Failed to delete job role");
   }
 }
 
@@ -689,6 +811,10 @@ const hrController = {
   deleteEmployeeDocument,
   getOrgChart,
   getHrStats,
+  getJobRoles,
+  createJobRole,
+  updateJobRole,
+  deleteJobRole,
 };
 
 export default hrController;

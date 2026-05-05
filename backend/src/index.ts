@@ -57,8 +57,10 @@ import predictiveRoutes from "./routes/predictive";
 import alertRoutes from "./routes/alerts";
 import dashboardRoutes from "./routes/dashboard";
 import chatbotRoutes from "./routes/chatbot";
+import meRoutes from "./routes/me";
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/me", meRoutes);
 app.use("/api/v1/hr", hrRoutes);
 app.use("/api/v1/finance", financeRoutes);
 app.use("/api/v1/accounting", accountingRoutes);

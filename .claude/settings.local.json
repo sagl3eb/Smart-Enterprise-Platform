@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "PowerShell(@\\('backend','ml-service','frontend'\\) | ForEach-Object { $dir = $_; Get-ChildItem $dir -Force -ErrorAction SilentlyContinue | ForEach-Object { $size = \\(Get-ChildItem $_.FullName -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum\\).Sum; [PSCustomObject]@{ Path = \"$dir/$\\($_.Name\\)\"; SizeMB = [math]::Round\\($size / 1MB, 2\\) } } } | Sort-Object SizeMB -Descending | Select-Object -First 20 | Format-Table -AutoSize)"
+    ]
+  }
+}

@@ -2,9 +2,10 @@ import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "./auth";
 import { sendForbidden, sendUnauthorized } from "../utils/response";
 
-export type RoleName = "admin" | "manager" | "employee" | "viewer";
+export type RoleName = "super_admin" | "admin" | "manager" | "employee" | "viewer";
 
 const ROLE_HIERARCHY: Record<RoleName, number> = {
+  super_admin: 50,
   admin: 40,
   manager: 30,
   employee: 20,
@@ -61,6 +62,42 @@ export function requireMinRole(minRole: RoleName) {
 
     next();
   };
+}
+
+// Viewers are read-only across the entire platform. Block any non-GET/HEAD/OPTIONS
+// request so they physically cannot create, update, or delete data anywhere.
+export function blockViewerWrites(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) return next();
+  const readonly = req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS";
+  if (!readonly && req.user.roleName === "viewer") {
+    sendForbidden(res, "Viewer role is read-only and cannot modify data");
+    return;
+  }
+  next();
+}
+
+// Super admins must not see operational module data (HR, Finance, Accounting,
+// ICT, Projects, Workforce, Predictive, Alerts). They retain full access only
+// on user and organization management (/api/v1/auth/users and
+// /api/v1/auth/organizations). Apply this to module routes, not to /auth.
+export function blockSuperAdminModuleWrites(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (!req.user) return next();
+  if (req.user.roleName === "super_admin") {
+    sendForbidden(
+      res,
+      "Super admin does not have access to module data. Use the Admin Panel for user and organization management."
+    );
+    return;
+  }
+  next();
 }
 
 export function requireOwnerOrRole(

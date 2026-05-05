@@ -3,13 +3,16 @@ import logger from "../utils/logger";
 
 const ML_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
 
-async function proxyToML(method: string, path: string, data?: unknown) {
+async function proxyToML(method: string, path: string, data?: unknown, timeoutMs?: number) {
+  // Training endpoints can take several minutes on large datasets
+  const isTraining = path.includes("/train");
+  const timeout = timeoutMs ?? (isTraining ? 600000 : 60000);
   try {
     const res = await axios({
       method,
       url: `${ML_URL}${path}`,
       data,
-      timeout: 60000,
+      timeout,
     });
     return res.data;
   } catch (error) {

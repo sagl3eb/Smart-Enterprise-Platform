@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SEP · The Smart Enterprise Platform — Enterprise, Redrawn.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bone:     #F8F7FF;
+    --bone-2:   #EDE9FE;
+    --ink:      #13102A;
+    --ink-soft: #3A2E66;
+    --ink-mute: #6B5F8F;
+    --ink-hair: rgba(19,16,42,0.12);
+    --ink-rule: rgba(19,16,42,0.26);
+    --cobalt:   #5B21B6;
+    --cobalt-d: #3C0F8A;
+    --clay:     #7C3AED;
+    --sage:     #8B5CF6;
+    --sun:      #C4B5FD;
+  }
+  *{ box-sizing:border-box; -webkit-font-smoothing:antialiased; }
+  html, body { margin:0; padding:0; }
+  body{
+    background: var(--bone);
+    color: var(--ink);
+    font-family:'Bricolage Grotesque', sans-serif;
+    font-variation-settings: "opsz" 24;
+    overflow-x: hidden;
+  }
+
+  .showcase-nav {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px; padding: 9px 16px;
+    background: rgba(19,16,42,0.9); backdrop-filter: blur(8px);
+    border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em;
+    z-index: 1000; color: #F1EEFF; text-transform: uppercase;
+  }
+  .showcase-nav a { color: #F1EEFF; text-decoration: none; opacity: 0.8; transition: opacity 0.2s; }
+  .showcase-nav a:hover { opacity: 1; color: #C4B5FD; }
+  .showcase-nav .sep { opacity: 0.3; }
+  .showcase-nav .here { color: #C4B5FD; opacity: 1; }
+  .display{ font-family:'Bricolage Grotesque', sans-serif; font-weight: 800; font-variation-settings: "opsz" 96; letter-spacing:-0.04em; line-height: 0.88; }
+  .serif{ font-family:'Fraunces', serif; font-variation-settings:"opsz" 144, "SOFT" 40; }
+  .mono{ font-family:'JetBrains Mono', monospace; letter-spacing: 0.01em; }
+  .smallcaps{ text-transform: uppercase; letter-spacing: 0.22em; font-weight: 500; font-size: 11px; font-family:'JetBrains Mono', monospace; }
+
+  /* grain */
+  body::before{
+    content:''; position: fixed; inset:0; pointer-events:none; z-index: 200; opacity: 0.19; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap{ max-width: 1440px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 60px); position:relative; }
+
+  /* ───────────── NAV ───────────── */
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 24px 0 16px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; z-index: 80;
+    background: var(--bone);
+  }
+  nav .logo{
+    font-family:'Fraunces', serif; font-weight: 600; font-size: 22px; letter-spacing:-0.01em;
+    display:flex; align-items:center; gap:10px;
+  }
+  nav .logo .mark{
+    display:inline-grid; place-items:center; width: 30px; height: 30px; border-radius: 99px; background: var(--ink); color: var(--bone);
+    font-family:'Fraunces', serif; font-style:italic; font-size: 18px;
+  }
+  nav ul{ display:flex; list-style:none; padding:0; margin:0; gap: 28px; font-family:'JetBrains Mono', monospace; font-size:12.5px; text-transform:uppercase; letter-spacing:0.2em; }
+  nav ul a{ color: var(--ink); text-decoration: none; position:relative; padding-bottom: 2px; }
+  nav ul a::after{ content:''; position:absolute; left:0; right:100%; bottom:-2px; height:2px; background: var(--cobalt); transition: right 0.3s; }
+  nav ul a:hover::after{ right: 0; }
+  nav .cta{
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family:'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding: 12px 18px; background: var(--ink); color: var(--bone); text-decoration: none; border-radius: 99px;
+    transition: transform 0.25s, background 0.25s;
+  }
+  nav .cta:hover{ background: var(--cobalt); transform: translateY(-1px); }
+
+  /* announcement bar */
+  .announce{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 8px 0; border-bottom: 1px solid var(--ink-hair);
+    font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing:0.2em; text-transform: uppercase; color: var(--ink-mute);
+    overflow: hidden; white-space: nowrap;
+  }
+  .announce .dot{ color: var(--clay); }
+
+  /* ───────────── HERO ───────────── */
+  .hero{
+    padding: 50px 0 20px; position: relative;
+  }
+  .hero .tags{
+    display:flex; gap: 14px; margin-bottom: 30px; font-family:'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em;
+  }
+  .hero .tags span{ padding: 6px 12px; border: 1px solid var(--ink); border-radius: 99px; }
+  .hero .tags span.blue{ background: var(--cobalt); color: var(--bone); border-color: var(--cobalt); }
+
+  .hero h1{
+    font-family:'Bricolage Grotesque', sans-serif; font-weight: 800; font-variation-settings:"opsz" 96;
+    font-size: clamp(72px, 13vw, 220px); line-height: 0.85; letter-spacing:-0.05em; margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .hero h1 .ital{
+    font-family:'Fraunces', serif; font-style: italic; font-weight: 300; font-variation-settings:"opsz" 144, "SOFT" 100, "WONK" 1;
+    color: var(--cobalt); letter-spacing:-0.01em;
+  }
+  .hero h1 .line2{ display: inline-block; margin-left: clamp(40px, 10vw, 160px); }
+  .hero h1 .line3{ color: var(--clay); font-variation-settings: "opsz" 96; font-weight: 300; font-style: normal; }
+  .hero h1 .line3 em{
+    font-family:'Fraunces', serif; font-style: italic; font-weight: 300; color: var(--ink);
+  }
+  .hero h1 .strike{
+    position:relative; display:inline-block; color: var(--ink-mute);
+  }
+  .hero h1 .strike::after{
+    content:''; position:absolute; left: -2%; right: -2%; top: 48%; height: 6px; background: var(--clay); transform: rotate(-2deg);
+  }
+
+  .hero .below{
+    display:grid; grid-template-columns: 2fr 5fr; gap: 36px; align-items:end; margin-top: 40px;
+    padding-top: 28px; border-top: 1px solid var(--ink);
+  }
+  .hero .below .kicker{ font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.22em; text-transform: uppercase; color: var(--ink-mute);}
+  .hero .below p{
+    font-family:'Fraunces', serif; font-weight: 360; font-size: clamp(22px, 2.3vw, 30px); line-height: 1.18; letter-spacing:-0.005em; max-width: 820px;
+    color: var(--ink);
+  }
+  .hero .below p em{ font-style: italic; color: var(--cobalt); }
+
+  .hero-actions{ display:flex; gap: 16px; margin-top: 24px; align-items:center; flex-wrap: wrap; }
+  .btn-primary{
+    display:inline-flex; align-items:center; gap: 14px; padding: 16px 26px; background: var(--ink); color: var(--bone);
+    border-radius: 99px; text-decoration:none; font-family:'JetBrains Mono', monospace; font-size: 13px; letter-spacing:0.2em; text-transform:uppercase;
+    transition: background 0.25s, transform 0.25s; position:relative; overflow:hidden;
+  }
+  .btn-primary::before{
+    content:''; position:absolute; inset:0; background: var(--cobalt); transform: translateY(100%); transition: transform 0.35s cubic-bezier(.5,0,.2,1);
+  }
+  .btn-primary > span{ position:relative; z-index: 2; }
+  .btn-primary:hover::before{ transform: translateY(0); }
+  .btn-ghost{
+    display:inline-flex; align-items:center; gap: 10px; padding: 16px 8px; color: var(--ink); text-decoration: underline;
+    text-decoration-color: var(--clay); text-underline-offset: 6px; font-family:'JetBrains Mono', monospace; font-size:13px; letter-spacing:0.2em; text-transform: uppercase;
+  }
+  .stat-inline{ font-family:'Fraunces', serif; font-style: italic; color: var(--ink-mute); font-size: 15px; margin-left: 10px; }
+
+  /* ───────────── MARQUEE ───────────── */
+  .marquee{
+    margin-top: 54px; padding: 14px 0; background: var(--ink); color: var(--bone); overflow: hidden;
+    border-top: 6px solid var(--cobalt); border-bottom: 6px solid var(--clay);
+  }
+  .marquee .track{ display:flex; gap: 64px; white-space: nowrap; animation: slide 40s linear infinite; }
+  .marquee span{ font-family:'Fraunces', serif; font-size: clamp(40px, 5vw, 90px); font-weight: 300; line-height: 1; letter-spacing:-0.01em; }
+  .marquee span em{ font-style: italic; color: var(--sun); }
+  .marquee .star{ color: var(--clay); }
+  @keyframes slide { from { transform: translateX(0);} to { transform: translateX(-50%);} }
+
+  /* ───────────── MANIFESTO ───────────── */
+  .manifesto{
+    padding: 100px 0; position: relative;
+    display:grid; grid-template-columns: 1fr 2fr; gap: 60px; align-items:start;
+    border-bottom: 1px solid var(--ink);
+  }
+  .manifesto .title{ position: sticky; top: 90px; }
+  .manifesto .title .num{
+    font-family:'Fraunces', serif; font-style:italic; font-size: 110px; line-height: 1; color: var(--cobalt); font-weight: 300;
+  }
+  .manifesto .title h2{
+    font-family:'Fraunces', serif; font-weight: 360; font-size: 56px; line-height: 1; letter-spacing:-0.015em; margin: 12px 0 0;
+  }
+  .manifesto .title h2 em{ font-style: italic; color: var(--clay); }
+  .manifesto .list{ display: grid; grid-template-columns: 1fr 1fr; gap: 40px 48px; }
+  .tenet{ padding: 28px 0; border-top: 2px solid var(--ink); position: relative; }
+  .tenet .roman{
+    font-family:'Fraunces', serif; font-style: italic; font-weight: 300; font-size: 32px; color: var(--cobalt); line-height: 1;
+  }
+  .tenet h3{
+    font-family:'Bricolage Grotesque', sans-serif; font-weight: 700; font-variation-settings: "opsz" 48;
+    font-size: 34px; line-height: 1.02; letter-spacing:-0.02em; margin: 6px 0 12px;
+  }
+  .tenet h3 em{ font-family:'Fraunces', serif; font-style: italic; font-weight: 300; color: var(--clay);}
+  .tenet p{ margin: 0; font-size: 16px; line-height: 1.55; color: var(--ink-soft); }
+
+  /* ───────────── MODULES ───────────── */
+  .modules{
+    padding: 100px 0 60px; border-bottom: 1px solid var(--ink);
+  }
+  .mod-head{ display:flex; justify-content: space-between; align-items: flex-end; gap: 40px; margin-bottom: 40px; }
+  .mod-head h2{ font-family:'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(48px, 7vw, 120px); line-height: 0.9; letter-spacing:-0.04em; margin:0; }
+  .mod-head h2 em{ font-family:'Fraunces', serif; font-style:italic; font-weight: 300; color: var(--cobalt); }
+  .mod-head p{ font-family:'Fraunces', serif; font-size: 22px; line-height: 1.25; max-width: 460px; color: var(--ink-soft); margin:0; }
+
+  .mod-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 180px; gap: 1px;
+    background: var(--ink); border: 1px solid var(--ink);
+  }
+  .mod{
+    background: var(--bone); padding: 22px 20px; display:flex; flex-direction:column; justify-content:space-between; position: relative; overflow: hidden;
+    transition: background 0.35s, color 0.35s;
+  }
+  .mod .num{ font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing:0.22em; text-transform:uppercase; color: var(--ink-mute); }
+  .mod .name{
+    font-family:'Fraunces', serif; font-weight: 360; font-size: clamp(26px, 2.2vw, 40px); line-height: 1; letter-spacing:-0.01em;
+  }
+  .mod .name em{ font-style: italic; color: var(--cobalt);}
+  .mod .desc{ font-family:'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.5; color: var(--ink-soft); max-width: 230px; }
+  .mod .glyph{ font-family:'Fraunces', serif; font-weight: 300; font-size: 90px; line-height: 1; color: var(--ink-hair); position: absolute; top: 8px; right: 16px; transform: rotate(-6deg); transition: all 0.35s; }
+  .mod:hover{ background: var(--ink); color: var(--bone); }
+  .mod:hover .num, .mod:hover .desc{ color: rgba(246,243,236,0.7); }
+  .mod:hover .name em{ color: var(--sun); }
+  .mod:hover .glyph{ color: var(--cobalt); transform: rotate(6deg) scale(1.15); }
+
+  .mod.wide{ grid-column: span 2; }
+  .mod.tall{ grid-row: span 2; }
+  .mod.accent{ background: var(--cobalt); color: var(--bone); }
+  .mod.accent .num, .mod.accent .desc{ color: rgba(246,243,236,0.75); }
+  .mod.accent .name em{ color: var(--sun); }
+  .mod.accent .glyph{ color: rgba(246,243,236,0.2); }
+  .mod.accent:hover{ background: var(--clay); }
+
+  @media (max-width: 960px){
+    .mod-grid{ grid-template-columns: repeat(2, 1fr); grid-auto-rows: 170px; }
+    .mod.wide{ grid-column: span 2; }
+    .mod.tall{ grid-row: span 1; }
+    .manifesto{ grid-template-columns: 1fr; }
+    .manifesto .list{ grid-template-columns: 1fr; }
+  }
+
+  /* ───────────── STATS ───────────── */
+  .stats{
+    padding: 80px 0; display:grid; grid-template-columns: 2fr 3fr; gap: 60px; align-items:start;
+    border-bottom: 1px solid var(--ink);
+    position: relative;
+  }
+  .stats::before{
+    content:'◎'; position: absolute; right: -10px; top: 30px; font-size: 160px; color: var(--sun);
+    font-family:'Fraunces', serif; opacity: 0.65; transform: rotate(12deg);
+  }
+  .stats h3{ font-family:'Bricolage Grotesque', sans-serif; font-size: clamp(36px, 4vw, 64px); line-height: 1; letter-spacing:-0.03em; margin: 0 0 14px; font-weight: 800; }
+  .stats h3 em{ font-family:'Fraunces', serif; font-style:italic; font-weight: 300; color: var(--sage); }
+  .stats p{ font-family:'Fraunces', serif; font-size: 19px; line-height: 1.35; color: var(--ink-soft); max-width: 420px; margin: 0;}
+  .stat-grid{ display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  .stat-box{ padding: 24px 18px; border-right: 1px solid var(--ink-hair); }
+  .stat-box:last-child{ border-right: 0; }
+  .stat-box .n{ font-family:'Fraunces', serif; font-weight: 300; font-size: clamp(48px, 5.5vw, 88px); line-height: 1; letter-spacing:-0.03em; display:block; }
+  .stat-box .n em{ font-style: italic; color: var(--cobalt); }
+  .stat-box .k{ font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing:0.2em; text-transform:uppercase; color: var(--ink-mute); margin-top: 8px; display: block; }
+
+  /* ───────────── TESTIMONIAL ───────────── */
+  .pull{
+    padding: 120px 0; border-bottom: 1px solid var(--ink); position:relative; overflow: hidden;
+  }
+  .pull q{
+    font-family:'Fraunces', serif; font-style: italic; font-weight: 300; font-variation-settings:"opsz" 144, "SOFT" 100;
+    font-size: clamp(40px, 5vw, 88px); line-height: 1.05; letter-spacing:-0.015em; color: var(--ink);
+    display: block; max-width: 1100px;
+  }
+  .pull q::before{ content: '“'; color: var(--cobalt); margin-right: 8px; font-size: 1.05em; }
+  .pull q::after{ content: '”'; color: var(--cobalt); margin-left: 4px; font-size: 1.05em; }
+  .pull q em{ color: var(--clay); font-style: italic; }
+  .pull .cred{
+    margin-top: 36px; display:flex; align-items:center; gap: 14px; font-family:'JetBrains Mono', monospace; font-size: 12.5px; letter-spacing:0.2em; text-transform: uppercase; color: var(--ink-mute);
+  }
+  .pull .cred .sig{ font-family:'Fraunces', serif; font-style: italic; font-size: 28px; color: var(--ink); letter-spacing:-0.01em; text-transform: none;}
+
+  /* ───────────── PRICING / CTA ───────────── */
+  .cta{
+    padding: 100px 0 60px; text-align:center;
+    background: var(--ink); color: var(--bone); position: relative; overflow: hidden;
+  }
+  .cta::before{
+    content:''; position: absolute; inset:0; background:
+      radial-gradient(ellipse at 20% 0%, rgba(27,62,232,0.18), transparent 60%),
+      radial-gradient(ellipse at 80% 100%, rgba(217,106,51,0.18), transparent 60%);
+  }
+  .cta h2{
+    font-family:'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(60px, 10vw, 180px); line-height: 0.86; letter-spacing:-0.05em; margin: 0 0 24px;
+    position: relative; z-index: 2;
+  }
+  .cta h2 em{ font-family:'Fraunces', serif; font-style: italic; font-weight: 300; color: var(--sun);}
+  .cta h2 .u{ text-decoration: underline; text-decoration-color: var(--clay); text-decoration-thickness: 6px; text-underline-offset: 12px;}
+  .cta p{ font-family:'Fraunces', serif; font-size: 22px; line-height: 1.35; max-width: 700px; margin: 0 auto 36px; opacity: 0.85; position: relative; z-index: 2; font-style: italic; font-weight: 300; }
+  .cta .btn-primary{ background: var(--bone); color: var(--ink); }
+  .cta .btn-primary::before{ background: var(--sun); }
+  .cta .btn-primary:hover{ color: var(--ink); }
+  .cta .btn-ghost{ color: var(--bone); text-decoration-color: var(--sun); }
+  .cta .hero-actions{ justify-content:center; position: relative; z-index: 2;}
+
+  /* ───────────── FOOTER ───────────── */
+  footer{
+    background: var(--ink); color: var(--bone); padding: 60px 0 30px; border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  footer .ft-grid{ display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 40px; padding: 20px 0 40px;}
+  footer .brand h4{ font-family:'Fraunces', serif; font-weight: 360; font-size: 42px; letter-spacing:-0.01em; margin: 0 0 10px;}
+  footer .brand h4 em{ font-style:italic; color: var(--sun);}
+  footer .brand p{ font-family:'Fraunces', serif; font-style: italic; color: rgba(246,243,236,0.7); max-width: 380px; }
+  footer ul{ list-style:none; padding:0; margin:0; font-family:'JetBrains Mono', monospace; font-size: 13px; }
+  footer ul li{ padding: 5px 0; color: rgba(246,243,236,0.75); }
+  footer ul li.h{ color: var(--sun); text-transform: uppercase; letter-spacing: 0.22em; font-size: 11px; padding-bottom: 12px;}
+  footer .bottom{
+    display:flex; justify-content: space-between; align-items: center; padding: 24px 0 0; border-top: 1px solid rgba(255,255,255,0.15);
+    font-family:'JetBrains Mono', monospace; font-size: 11.5px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(246,243,236,0.55);
+  }
+  footer .huge{
+    font-family:'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(120px, 18vw, 320px); line-height: 0.85; letter-spacing:-0.06em;
+    margin: 20px 0 0; color: rgba(246,243,236,0.06);
+    border-top: 1px dashed rgba(246,243,236,0.15); padding-top: 30px; text-align: center;
+  }
+  footer .huge em{ font-family:'Fraunces', serif; font-style: italic; color: rgba(27,62,232,0.35); }
+
+  /* reveal */
+  @keyframes rise { from { opacity: 0; transform: translateY(24px);} to {opacity:1; transform: none;} }
+  [data-reveal]{ animation: rise 1s cubic-bezier(0.2,0.7,0.2,1) both; }
+  [data-reveal="2"]{ animation-delay: 0.08s;} [data-reveal="3"]{ animation-delay: 0.16s;} [data-reveal="4"]{ animation-delay: 0.24s;} [data-reveal="5"]{ animation-delay: 0.32s;}
+
+  .bleed-edge{ position: absolute; right: -20px; top: 0; font-family:'Fraunces', serif; font-style: italic; font-size: 220px; font-weight: 200; color: rgba(10,10,10,0.06); line-height: 1;}
+
+  /* underline hover for inline link */
+  .inline-link{
+    color: var(--cobalt); text-decoration: underline; text-decoration-color: currentColor; text-underline-offset: 4px;
+  }
+
+  /* scroll hint */
+  .scroll-hint{
+    position:absolute; right: 0; top: 20px; writing-mode: vertical-rl;
+    font-family:'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--ink-mute);
+  }
+</style>
+</head>
+<body>
+  <nav class="showcase-nav">
+    <a href="index.html">◂ Index</a>
+    <span class="sep">·</span>
+    <a href="03-chatbot-signal.html">◂ N° 03</a>
+    <span class="sep">·</span>
+    <span class="here">N° 04 Manifesto</span>
+  </nav>
+
+  <!-- ANNOUNCE -->
+  <div class="wrap">
+    <div class="announce">
+      <span>· New · Optimization suggestions, generated from your live data <span class="dot">●</span></span>
+      <span>Edition II · April 2026</span>
+      <span>Made for operators, not spreadsheets <span class="dot">●</span></span>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="wrap">
+    <nav>
+      <div class="logo">
+        <span class="mark">s</span>
+        <span>Smart Enterprise <em style="font-style:italic; color: var(--cobalt);">Platform</em></span>
+      </div>
+      <ul>
+        <li><a href="#manifesto">Manifesto</a></li>
+        <li><a href="#modules">Modules</a></li>
+        <li><a href="#numbers">Numbers</a></li>
+        <li><a href="#voices">Voices</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+      <a href="#" class="cta"><span>Book a demo</span> →</a>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <section class="wrap">
+    <div class="hero">
+      <div class="scroll-hint">scroll ↓ to read the manifesto</div>
+      <div class="tags" data-reveal="1">
+        <span class="blue">· Platform v2.6</span>
+        <span>HR · Finance · ICT · Alerts · ML</span>
+        <span>Self-hosted or cloud</span>
+      </div>
+
+      <h1>
+        <span data-reveal="1">Enterprise,</span><br/>
+        <span class="line2 ital" data-reveal="2">redrawn</span>
+        <span data-reveal="2" style="font-size: 0.3em; font-family:'Fraunces', serif; font-style: italic; font-weight: 300; color: var(--ink-mute); vertical-align: super; margin-left: 8px;">→ for 2026.</span><br/>
+        <span class="line3" data-reveal="3">Nine <em>modules.</em></span>
+        <span class="line3" data-reveal="4"><span class="strike">One dashboard.</span></span>
+        <span class="line3" data-reveal="5">One quiet <em>instrument.</em></span>
+      </h1>
+
+      <div class="below">
+        <div class="kicker" data-reveal="2">N° 01 — the pitch</div>
+        <div>
+          <p data-reveal="3">
+            SEP is a full operating system for the office of the CEO — HR, Finance, Accounting, ICT, Projects, Workforce, Alerts, and <em>machine-learning-backed</em> predictions, in one considered instrument. Priced for the company you actually have.
+          </p>
+          <div class="hero-actions" data-reveal="4">
+            <a href="#" class="btn-primary"><span>Start free, 30 days →</span></a>
+            <a href="#" class="btn-ghost">Watch the 2-min tour ↗</a>
+            <span class="stat-inline">— used by 94 teams across 12 countries.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee">
+    <div class="track">
+      <span>SMART &nbsp;<em>ENTERPRISE</em>&nbsp; <span class="star">✦</span> &nbsp;PLATFORM &nbsp;<em>·</em> &nbsp;THE &nbsp;<em>LEDGER</em> &nbsp;FOR&nbsp; GROWN&nbsp;COMPANIES &nbsp;<span class="star">✦</span> &nbsp;</span>
+      <span>SMART &nbsp;<em>ENTERPRISE</em>&nbsp; <span class="star">✦</span> &nbsp;PLATFORM &nbsp;<em>·</em> &nbsp;THE &nbsp;<em>LEDGER</em> &nbsp;FOR&nbsp; GROWN&nbsp;COMPANIES &nbsp;<span class="star">✦</span> &nbsp;</span>
+      <span>SMART &nbsp;<em>ENTERPRISE</em>&nbsp; <span class="star">✦</span> &nbsp;PLATFORM &nbsp;<em>·</em> &nbsp;THE &nbsp;<em>LEDGER</em> &nbsp;FOR&nbsp; GROWN&nbsp;COMPANIES &nbsp;<span class="star">✦</span> &nbsp;</span>
+    </div>
+  </div>
+
+  <!-- MANIFESTO -->
+  <section class="wrap" id="manifesto">
+    <div class="manifesto">
+      <div class="title">
+        <span class="num">II.</span>
+        <h2>A small <em>manifesto</em><br/>for running<br/>a company <em>quietly.</em></h2>
+        <p style="font-family:'Fraunces', serif; font-style:italic; color: var(--ink-mute); margin-top: 22px; font-size: 17px;">
+          Five convictions we kept refusing to compromise.
+        </p>
+      </div>
+      <div class="list">
+        <div class="tenet">
+          <div class="roman">I.</div>
+          <h3>Software should be <em>legible</em>.</h3>
+          <p>Every screen is a sentence. If a screen cannot be read in five seconds by someone who has never seen it before, it is not yet finished. We finish screens.</p>
+        </div>
+        <div class="tenet">
+          <div class="roman">II.</div>
+          <h3>The <em>dashboard</em> is not the product.</h3>
+          <p>Dashboards are the preface. The product is the decision you made because of what you saw. SEP is optimized for the decision.</p>
+        </div>
+        <div class="tenet">
+          <div class="roman">III.</div>
+          <h3>Predictions <em>owe</em> explanations.</h3>
+          <p>An ML model that cannot say why it flagged an employee does not belong in a review. Every prediction is accompanied by its three strongest contributing factors.</p>
+        </div>
+        <div class="tenet">
+          <div class="roman">IV.</div>
+          <h3>Boredom is a <em>feature</em>.</h3>
+          <p>The platform should be the least exciting part of Monday. Automation is what quiet looks like from the outside. A quiet Monday means the system is working.</p>
+        </div>
+        <div class="tenet" style="grid-column: span 2;">
+          <div class="roman">V.</div>
+          <h3>The smallest customer gets the same software as the largest.</h3>
+          <p>No segmented product for the SME. No "enterprise tier" locking the useful things. The same instrument, priced to the size of the company using it — because organizations grow in both directions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODULES -->
+  <section class="wrap" id="modules">
+    <div class="modules">
+      <div class="mod-head">
+        <h2>Nine <em>disciplines</em>.<br/>One&nbsp;instrument.</h2>
+        <p>Each module is a full product on its own — but they share a common ledger, a common user model, and a common vocabulary. You install what you need; you turn on the rest when you need it.</p>
+      </div>
+      <div class="mod-grid">
+        <div class="mod wide accent">
+          <div class="num">N° 01 · Core</div>
+          <div>
+            <div class="name">The <em>Dashboard.</em></div>
+            <div class="desc" style="color:rgba(246,243,236,0.85); margin-top: 10px;">Executive overview. Live KPIs from every module. Readable as a page, not a puzzle.</div>
+          </div>
+          <div class="glyph">◉</div>
+        </div>
+        <div class="mod">
+          <div class="num">N° 02</div>
+          <div class="name">HR <em>Management</em></div>
+          <div class="desc">Employees, departments, leave, org chart, payroll signals.</div>
+          <div class="glyph">₦</div>
+        </div>
+        <div class="mod">
+          <div class="num">N° 03</div>
+          <div class="name">Finance</div>
+          <div class="desc">Budgets, transactions, variance, category reconciliation.</div>
+          <div class="glyph">¢</div>
+        </div>
+        <div class="mod tall">
+          <div class="num">N° 04</div>
+          <div class="name">Accounting</div>
+          <div class="desc">Invoices, chart of accounts, journal, trial balance. Records payments that deduct against the Finance ledger in the same transaction.</div>
+          <div class="glyph">₤</div>
+        </div>
+        <div class="mod">
+          <div class="num">N° 05</div>
+          <div class="name">ICT</div>
+          <div class="desc">Assets, tickets, licenses, network, SLA.</div>
+          <div class="glyph">⌘</div>
+        </div>
+        <div class="mod">
+          <div class="num">N° 06</div>
+          <div class="name">Projects</div>
+          <div class="desc">Construction logistics, milestones, progress vs. plan.</div>
+          <div class="glyph">◰</div>
+        </div>
+        <div class="mod">
+          <div class="num">N° 07</div>
+          <div class="name">Workforce</div>
+          <div class="desc">Attrition, satisfaction, surveys, department risk.</div>
+          <div class="glyph">✶</div>
+        </div>
+        <div class="mod accent" style="background: var(--clay);">
+          <div class="num" style="color: rgba(246,243,236,0.85);">N° 08 · ML</div>
+          <div>
+            <div class="name">Predictive <em style="color: var(--sun);">Analytics</em></div>
+            <div class="desc" style="color:rgba(246,243,236,0.9);">Attrition, forecasts, anomaly detection. Every prediction carries its top three explanations.</div>
+          </div>
+          <div class="glyph" style="color: rgba(246,243,236,0.25);">∿</div>
+        </div>
+        <div class="mod wide">
+          <div class="num">N° 09 · Signals</div>
+          <div>
+            <div class="name">Alerts &amp; <em>Optimization</em></div>
+            <div class="desc" style="margin-top: 10px;">Threshold alerts + a scanner that reads your live data and generates suggestions across six modules. One click to generate — they come with rationale, impact, and effort.</div>
+          </div>
+          <div class="glyph">◎</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="wrap" id="numbers">
+    <div class="stats">
+      <div>
+        <h3>Numbers we <em>admit</em> to.</h3>
+        <p>Not marketing figures. These are the platform's actual footprints after its first year in the field.</p>
+      </div>
+      <div>
+        <div class="stat-grid">
+          <div class="stat-box"><span class="n tnum">94</span><span class="k">Organizations</span></div>
+          <div class="stat-box"><span class="n tnum">1.2M<em>+</em></span><span class="k">Records indexed</span></div>
+          <div class="stat-box"><span class="n tnum">56.5k</span><span class="k">Rows · attrition model</span></div>
+          <div class="stat-box"><span class="n tnum">9</span><span class="k">Integrated modules</span></div>
+        </div>
+        <div class="stat-grid" style="border-top: 0;">
+          <div class="stat-box"><span class="n tnum">18<em>ms</em></span><span class="k">Median API · p50</span></div>
+          <div class="stat-box"><span class="n tnum">240<em>ms</em></span><span class="k">Median API · p99</span></div>
+          <div class="stat-box"><span class="n tnum">99.93%</span><span class="k">Uptime · last quarter</span></div>
+          <div class="stat-box"><span class="n tnum">0</span><span class="k">Dark-pattern nudges</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIAL -->
+  <section class="wrap" id="voices">
+    <div class="pull">
+      <q>We used to run the company from a wall of <em>browser tabs</em>. Now we run it from a page. The quiet is what we didn't know we were buying.</q>
+      <div class="cred">
+        <span class="sig">— M. Torres,</span>
+        <span>CFO · Orchard Holdings &nbsp;·&nbsp; customer since 2025</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="pricing">
+    <div class="wrap">
+      <h2>Run your company <em>quietly.</em><br/>Start this <span class="u">Monday.</span></h2>
+      <p>Thirty days, the full platform, no card, no sales call. If you keep it, it is priced by active seats — transparent, and printed on one page. If you don't, your data exports cleanly the day you leave.</p>
+      <div class="hero-actions">
+        <a href="#" class="btn-primary"><span>Start the trial →</span></a>
+        <a href="#" class="btn-ghost">Read the pricing page ↗</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="wrap">
+      <div class="ft-grid">
+        <div class="brand">
+          <h4>Smart<br/>Enterprise&nbsp;<em>Platform.</em></h4>
+          <p>A quiet instrument for the office of the CEO. Made, tempered, and signed by the desk of the Platform — 2026.</p>
+        </div>
+        <ul>
+          <li class="h">Product</li>
+          <li>Modules</li><li>Pricing</li><li>Changelog</li><li>Roadmap</li><li>Security</li>
+        </ul>
+        <ul>
+          <li class="h">Company</li>
+          <li>Manifesto</li><li>The Desk</li><li>Customers</li><li>Press kit</li><li>Contact</li>
+        </ul>
+        <ul>
+          <li class="h">Resources</li>
+          <li>Docs</li><li>API</li><li>ML white paper</li><li>Integrations</li><li>Status</li>
+        </ul>
+        <ul>
+          <li class="h">Legal</li>
+          <li>Terms</li><li>Privacy</li><li>DPA</li><li>SOC 2</li><li>Sub-processors</li>
+        </ul>
+      </div>
+      <div class="huge">s<em>·</em>e<em>·</em>p</div>
+      <div class="bottom">
+        <span>© MMXXVI · The Smart Enterprise Platform · All folios reserved.</span>
+        <span>Composed in Bricolage &amp; Fraunces · served on bone paper.</span>
+      </div>
+    </div>
+  </footer>
+
+<script>
+  // Reveal on scroll using IntersectionObserver
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting){
+        e.target.style.animationPlayState = 'running';
+        e.target.style.opacity = '1';
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.tenet, .mod, .stat-box, .pull q').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity 0.9s cubic-bezier(0.2,0.7,0.2,1), transform 0.9s cubic-bezier(0.2,0.7,0.2,1)';
+    io.observe(el);
+  });
+  const io2 = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting){
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.tenet, .mod, .stat-box, .pull q').forEach(el => io2.observe(el));
+</script>
+
+</body>
+</html>

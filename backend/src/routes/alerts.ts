@@ -1,36 +1,36 @@
 import { Router } from "express";
 import alertController from "../controllers/alerts";
 import { authenticate } from "../middleware/auth";
-import { requireRole, requireMinRole } from "../middleware/rbac";
+import { attachScope } from "../middleware/callerScope";
+import { blockViewerWrites, blockSuperAdminModuleWrites } from "../middleware/rbac";
 
 const router = Router();
 router.use(authenticate);
+router.use(attachScope);
+router.use(blockViewerWrites);
+router.use(blockSuperAdminModuleWrites);
 
-// ─── Stats ─────────────────────────────────────────────────
 router.get("/stats", alertController.getAlertStats);
 
-// ─── Alert Rules ───────────────────────────────────────────
 router.get("/rules", alertController.getAlertRules);
 router.get("/rules/:id", alertController.getAlertRuleById);
-router.post("/rules", requireMinRole("manager"), alertController.createAlertRule);
-router.put("/rules/:id", requireMinRole("manager"), alertController.updateAlertRule);
-router.delete("/rules/:id", requireRole("admin"), alertController.deleteAlertRule);
+router.post("/rules", alertController.createAlertRule);
+router.put("/rules/:id", alertController.updateAlertRule);
+router.delete("/rules/:id", alertController.deleteAlertRule);
 
-// ─── Evaluate (manual trigger) ─────────────────────────────
-router.post("/evaluate", requireMinRole("manager"), alertController.evaluateAlertRules);
+router.post("/evaluate", alertController.evaluateAlertRules);
 
-// ─── Alerts Feed ───────────────────────────────────────────
 router.get("/", alertController.getAlerts);
 router.get("/:id", alertController.getAlertById);
-router.post("/", requireMinRole("manager"), alertController.createAlert);
+router.post("/", alertController.createAlert);
 router.put("/:id/read", alertController.markAlertRead);
 router.put("/read-all", alertController.markAllAlertsRead);
-router.put("/:id/resolve", requireMinRole("manager"), alertController.resolveAlert);
-router.delete("/:id", requireRole("admin"), alertController.deleteAlert);
+router.put("/:id/resolve", alertController.resolveAlert);
+router.delete("/:id", alertController.deleteAlert);
 
-// ─── Optimization Suggestions ──────────────────────────────
 router.get("/suggestions", alertController.getOptimizationSuggestions);
-router.post("/suggestions", requireMinRole("manager"), alertController.createOptimizationSuggestion);
-router.put("/suggestions/:id/status", requireMinRole("manager"), alertController.updateOptimizationSuggestionStatus);
+router.post("/suggestions", alertController.createOptimizationSuggestion);
+router.post("/suggestions/generate", alertController.generateOptimizationSuggestions);
+router.put("/suggestions/:id/status", alertController.updateOptimizationSuggestionStatus);
 
 export default router;

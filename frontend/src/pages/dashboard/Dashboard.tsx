@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardHeader, CardBody, StatCard, Badge, LoadingSpinner } from "../../components/ui/Card";
+import { Toast } from "../../components/ui/Modal";
 import { BarChartWidget, DonutChartWidget, AreaChartWidget, Sparkline } from "../../components/charts/Charts";
 import { Users, DollarSign, Monitor, HardHat, AlertTriangle, Bell, TrendingUp, Activity } from "lucide-react";
 import { formatCurrency, formatNumber, formatRelativeTime } from "../../utils/formatters";
@@ -16,11 +17,23 @@ interface ExecutiveSummary {
   alerts: { unread: number };
 }
 
+interface DashboardCharts {
+  monthlyRevenue: Array<{ month: string; revenue: number; expenses: number }>;
+  ticketsByStatus: Array<{ name: string; value: number }>;
+  deptChartData: Array<{ name: string; employees: number; satisfaction: number }>;
+}
+
 export default function Dashboard() {
   const [summary, setSummary] = useState<ExecutiveSummary | null>(null);
   const [kpis, setKpis] = useState<KpiCard[]>([]);
   const [recentAlerts, setRecentAlerts] = useState<Alert[]>([]);
+  const [charts, setCharts] = useState<DashboardCharts>({
+    monthlyRevenue: [],
+    ticketsByStatus: [],
+    deptChartData: [],
+  });
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -29,17 +42,21 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [summaryRes, kpiRes, alertRes] = await Promise.allSettled([
+      const [summaryRes, kpiRes, alertRes, chartsRes] = await Promise.allSettled([
         api.get("/dashboard/summary"),
         api.get("/dashboard/kpis/latest"),
         api.get("/alerts?limit=5&isRead=false"),
+        api.get("/dashboard/charts"),
       ]);
 
       if (summaryRes.status === "fulfilled") setSummary(summaryRes.value.data.data);
       if (kpiRes.status === "fulfilled") setKpis(kpiRes.value.data.data || []);
       if (alertRes.status === "fulfilled") setRecentAlerts(alertRes.value.data.data || []);
+      if (chartsRes.status === "fulfilled" && chartsRes.value.data.data) {
+        setCharts(chartsRes.value.data.data);
+      }
     } catch {
-      // Use placeholder data if API not available
+      // Leave state empty; render shows zeros
     } finally {
       setLoading(false);
     }
@@ -54,73 +71,48 @@ export default function Dashboard() {
   }
 
   const s = summary || {
-    hr: { activeEmployees: 48, departments: 6, pendingLeaves: 5 },
-    finance: { ytdTransactions: 1240, ytdAmount: 2450000, budgetAllocated: 5000000, budgetSpent: 3200000 },
-    ict: { openTickets: 23 },
-    construction: { activeProjects: 8 },
-    workforce: { highRiskEmployees: 7 },
-    alerts: { unread: 12 },
+    hr: { activeEmployees: 0, departments: 0, pendingLeaves: 0 },
+    finance: { ytdTransactions: 0, ytdAmount: 0, budgetAllocated: 0, budgetSpent: 0 },
+    ict: { openTickets: 0 },
+    construction: { activeProjects: 0 },
+    workforce: { highRiskEmployees: 0 },
+    alerts: { unread: 0 },
   };
 
   const budgetUtilization = s.finance.budgetAllocated > 0
     ? Math.round((s.finance.budgetSpent / s.finance.budgetAllocated) * 100)
     : 0;
 
-  const deptChartData = [
-    { name: "Engineering", employees: 14, satisfaction: 4.1 },
-    { name: "Sales", employees: 10, satisfaction: 3.6 },
-    { name: "Marketing", employees: 8, satisfaction: 4.0 },
-    { name: "HR", employees: 5, satisfaction: 4.3 },
-    { name: "Finance", employees: 6, satisfaction: 3.9 },
-    { name: "Operations", employees: 5, satisfaction: 3.7 },
-  ];
-
-  const monthlyRevenue = [
-    { month: "Jul", revenue: 185000, expenses: 142000 },
-    { month: "Aug", revenue: 198000, expenses: 148000 },
-    { month: "Sep", revenue: 210000, expenses: 155000 },
-    { month: "Oct", revenue: 195000, expenses: 151000 },
-    { month: "Nov", revenue: 225000, expenses: 160000 },
-    { month: "Dec", revenue: 240000, expenses: 168000 },
-  ];
-
-  const ticketsByStatus = [
-    { name: "Open", value: 12 },
-    { name: "In Progress", value: 8 },
-    { name: "Resolved", value: 45 },
-    { name: "Closed", value: 120 },
-  ];
+  const { deptChartData, monthlyRevenue, ticketsByStatus } = charts;
 
   return (
     <PageWrapper title="Executive Dashboard" subtitle="Cross-module overview">
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
       {/* KPI Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Active Employees"
           value={formatNumber(s.hr.activeEmployees)}
-          change={2.4}
-          subtitle="vs last month"
+          subtitle={`${s.hr.departments} departments`}
           icon={<Users size={20} />}
         />
         <StatCard
           title="YTD Revenue"
           value={formatCurrency(s.finance.ytdAmount)}
-          change={8.2}
-          subtitle="vs last year"
+          subtitle={`${formatNumber(s.finance.ytdTransactions)} transactions`}
           icon={<DollarSign size={20} />}
         />
         <StatCard
           title="Open IT Tickets"
           value={formatNumber(s.ict.openTickets)}
-          change={-12.5}
-          subtitle="vs last week"
+          subtitle="currently open"
           icon={<Monitor size={20} />}
         />
         <StatCard
           title="Active Projects"
           value={formatNumber(s.construction.activeProjects)}
-          change={0}
-          subtitle="no change"
+          subtitle="in progress"
           icon={<HardHat size={20} />}
         />
       </div>
@@ -130,7 +122,6 @@ export default function Dashboard() {
         <StatCard
           title="Budget Utilization"
           value={`${budgetUtilization}%`}
-          change={budgetUtilization > 80 ? 5.2 : -3.1}
           subtitle="of allocated"
           icon={<TrendingUp size={20} />}
         />
@@ -171,6 +162,7 @@ export default function Dashboard() {
               ]}
               xKey="month"
               height={280}
+              currency
             />
           </CardBody>
         </Card>
@@ -190,7 +182,7 @@ export default function Dashboard() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Department Breakdown */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 self-start">
           <CardHeader>
             <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">Department Overview</h3>
             <p className="text-xs text-[#9B93B8]">Headcount & satisfaction</p>
@@ -203,7 +195,7 @@ export default function Dashboard() {
                 { key: "satisfaction", color: "#7C3AED" },
               ]}
               xKey="name"
-              height={260}
+              height={300}
             />
           </CardBody>
         </Card>
@@ -250,6 +242,7 @@ export default function Dashboard() {
           </CardBody>
         </Card>
       </div>
+
     </PageWrapper>
   );
 }

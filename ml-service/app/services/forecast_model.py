@@ -7,12 +7,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 MODEL_DIR = os.getenv("MODEL_DIR", os.path.join(os.path.dirname(__file__), "..", "models"))
 
-_prophet_available = False
-try:
-    from prophet import Prophet
-    _prophet_available = True
-except ImportError:
-    pass
+# Prophet is required — no fallback. If unavailable the import error is surfaced
+# at module-load time so the calling endpoint returns 5xx instead of silently
+# falling back to a less-accurate model.
+from prophet import Prophet
+_prophet_available = True
 
 _metrics: Dict = {}
 _version: str = "1.0.0"
@@ -29,10 +28,7 @@ def forecast(metric: str, historical_data: List[Dict], forecast_days: int = 90) 
     if len(df) < 30:
         raise ValueError("Need at least 30 data points for forecasting")
 
-    if _prophet_available:
-        return _forecast_prophet(metric, df, forecast_days)
-    else:
-        return _forecast_fallback(metric, df, forecast_days)
+    return _forecast_prophet(metric, df, forecast_days)
 
 
 def _forecast_prophet(metric: str, df: pd.DataFrame, forecast_days: int) -> Dict:

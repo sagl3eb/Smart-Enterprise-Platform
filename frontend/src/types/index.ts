@@ -244,6 +244,8 @@ export interface Invoice {
   totalAmount: number;
   paidAmount: number;
   status: string;
+  notes?: string | null;
+  budgetCategoryId?: string | null;
   lineItems?: InvoiceLineItem[];
 }
 
@@ -353,6 +355,8 @@ export interface Project {
   progress: number;
   managerId: string | null;
   location: string | null;
+  budgetCategoryId?: string | null;
+  teamMemberIds?: string[];
   _count?: { milestones: number; tasks: number; siteReports: number };
 }
 
@@ -394,6 +398,16 @@ export interface Material {
   stockQty: number;
   reorderLevel: number;
   supplier: string | null;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
 }
 
 export interface EquipmentFleet {
@@ -584,12 +598,19 @@ export interface DashboardWidget {
 
 // ─── Chatbot ───────────────────────────────────────────────
 
+export interface ChatNavigationLink {
+  path: string;
+  label: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   intent: string | null;
   timestamp: string;
+  source?: "ai" | "rule-based";
+  navigate?: ChatNavigationLink[];
 }
 
 export interface ChatSession {

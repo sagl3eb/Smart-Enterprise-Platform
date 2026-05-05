@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import useAuthStore from "../store/authStore";
+import useOrgFilterStore from "../store/orgFilterStore";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api/v1";
 const ML_BASE = import.meta.env.VITE_ML_API_BASE_URL || "http://localhost:8000";
@@ -17,6 +18,23 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (tokens?.accessToken) {
     config.headers.Authorization = `Bearer ${tokens.accessToken}`;
   }
+
+  // For super_admin, inject the selected organizationId filter as a query param
+  // so the backend's attachScope middleware narrows reads to that org. Skip the
+  // injection when the caller has already set an `organizationId` key in params
+  // (including the empty string) — that means the page wants explicit control.
+  const user = useAuthStore.getState().user;
+  if (user?.role?.name === "super_admin") {
+    const callerParams = (config.params || {}) as Record<string, unknown>;
+    const callerSpecifiedOrg = Object.prototype.hasOwnProperty.call(callerParams, "organizationId");
+    if (!callerSpecifiedOrg) {
+      const selectedOrgId = useOrgFilterStore.getState().selectedOrgId;
+      if (selectedOrgId) {
+        config.params = { ...callerParams, organizationId: selectedOrgId };
+      }
+    }
+  }
+
   return config;
 });
 
@@ -42,7 +60,12 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Don't attempt token refresh on the login or refresh endpoints themselves;
+    // let the caller handle the error (e.g. show "Invalid email or password").
+    const url = originalRequest?.url || "";
+    const isAuthEndpoint = url.includes("/auth/login") || url.includes("/auth/refresh");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });

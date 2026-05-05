@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardBody, StatCard, Badge, LoadingSpinner, EmptyState } from "../../components/ui/Card";
 import { Modal, FormInput, FormSelect, FormTextarea, Button, ConfirmDialog, Toast } from "../../components/ui/Modal";
-import { Users, Plus, Search, UserCheck, Briefcase, Edit, Trash2, Eye } from "lucide-react";
+import { Users, Plus, Search, UserCheck, Briefcase, Edit, Trash2 } from "lucide-react";
 import { formatCurrency, formatDate, statusColor } from "../../utils/formatters";
 import api from "../../api/client";
+import HRSubNav from "./HRSubNav";
 import type { Employee, Department, ApiMeta } from "../../types";
 
 const emptyForm = {
@@ -13,9 +14,12 @@ const emptyForm = {
   address: "", emergencyContact: "",
 };
 
+type JobRole = { id: string; name: string; level?: string | null; isActive: boolean };
+
 export default function EmployeeList() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [jobRoles, setJobRoles] = useState<JobRole[]>([]);
   const [meta, setMeta] = useState<ApiMeta | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -56,8 +60,15 @@ export default function EmployeeList() {
     } catch { /* silent */ }
   };
 
+  const fetchJobRoles = async () => {
+    try {
+      const res = await api.get("/hr/job-roles?isActive=true");
+      setJobRoles(res.data.data || []);
+    } catch { /* silent */ }
+  };
+
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { fetchDepartments(); fetchJobRoles(); }, []);
 
   const setField = (key: string, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
 
@@ -107,7 +118,7 @@ export default function EmployeeList() {
       const payload = {
         ...form,
         salary: Number(form.salary),
-        employeeCode: form.employeeCode || `EMP-${Date.now().toString().slice(-5)}`,
+        employeeCode: form.employeeCode.trim() || undefined,
       };
 
       if (editingId) {
@@ -130,21 +141,25 @@ export default function EmployeeList() {
     setSaving(true);
     try {
       await api.delete(`/hr/employees/${deleteId}`);
-      setToast({ message: "Employee terminated", type: "success" });
+      setToast({ message: "Employee deleted", type: "success" });
       setShowDelete(false);
       setDeleteId(null);
+      setShowView(false);
+      setViewEmployee(null);
       fetchData();
     } catch {
-      setToast({ message: "Failed to terminate employee", type: "error" });
+      setToast({ message: "Failed to delete employee", type: "error" });
     } finally { setSaving(false); }
   };
 
   const activeCount = employees.filter((e) => e.status === "active").length;
   const deptOptions = departments.map((d) => ({ value: d.id, label: d.name }));
+  const roleOptions = jobRoles.map((r) => ({ value: r.name, label: r.name }));
 
   return (
-    <PageWrapper title="Employee Management" subtitle="HR — Employee directory">
+    <PageWrapper title="Employee Management" subtitle="HR - Employee directory">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+      <HRSubNav />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Employees" value={String(meta?.total || employees.length)} icon={<Users size={20} />} />
@@ -178,14 +193,15 @@ export default function EmployeeList() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#E8E4F3] dark:border-[#2E2850]">
-                  {["Code", "Name", "Department", "Position", "Hire Date", "Salary", "Status", "Actions"].map((h) => (
+                  {["Code", "Name", "Department", "Position", "Hire Date", "Salary", "Status"].map((h) => (
                     <th key={h} className="text-left px-5 py-3 text-xs font-medium text-[#9B93B8]">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {employees.map((emp) => (
-                  <tr key={emp.id} className="border-b border-[#E8E4F3] dark:border-[#2E2850] last:border-0 hover:bg-[#F8F7FF] dark:hover:bg-[#0E0B1F]">
+                  <tr key={emp.id} onClick={() => openView(emp.id)}
+                    className="border-b border-[#E8E4F3] dark:border-[#2E2850] last:border-0 hover:bg-[#F8F7FF] dark:hover:bg-[#0E0B1F] cursor-pointer transition">
                     <td className="px-5 py-3 font-mono text-xs text-[#5B21B6]">{emp.employeeCode}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
@@ -193,7 +209,7 @@ export default function EmployeeList() {
                           {emp.firstName.charAt(0)}{emp.lastName.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-[#1E1B2E] dark:text-[#EDE9FE]">{emp.firstName} {emp.lastName}</p>
+                          <p className="font-medium text-[#1E1B2E] dark:text-[#EDE9FE] group-hover:underline">{emp.firstName} {emp.lastName}</p>
                           <p className="text-[10px] text-[#9B93B8]">{emp.email}</p>
                         </div>
                       </div>
@@ -203,13 +219,6 @@ export default function EmployeeList() {
                     <td className="px-5 py-3 text-[#4C4566] dark:text-[#B8AEDD]">{formatDate(emp.hireDate)}</td>
                     <td className="px-5 py-3 font-serif font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">{formatCurrency(emp.salary)}</td>
                     <td className="px-5 py-3"><Badge className={statusColor(emp.status)}>{emp.status}</Badge></td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => openView(emp.id)} className="p-1.5 rounded-[6px] hover:bg-[#EDE9FE] dark:hover:bg-[#2D1F5E] text-[#9B93B8] hover:text-[#5B21B6]"><Eye size={14} /></button>
-                        <button onClick={() => openEdit(emp)} className="p-1.5 rounded-[6px] hover:bg-[#EDE9FE] dark:hover:bg-[#2D1F5E] text-[#9B93B8] hover:text-[#5B21B6]"><Edit size={14} /></button>
-                        <button onClick={() => { setDeleteId(emp.id); setShowDelete(true); }} className="p-1.5 rounded-[6px] hover:bg-red-50 dark:hover:bg-red-900/20 text-[#9B93B8] hover:text-red-500"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -228,7 +237,6 @@ export default function EmployeeList() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Employee" : "Add Employee"} size="lg">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormInput label="First Name" value={form.firstName} onChange={(v) => setField("firstName", v)} required />
@@ -237,7 +245,7 @@ export default function EmployeeList() {
           <FormInput label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} placeholder="+60..." />
           <FormInput label="Employee Code" value={form.employeeCode} onChange={(v) => setField("employeeCode", v)} placeholder="Auto-generated if empty" disabled={!!editingId} />
           <FormSelect label="Department" value={form.departmentId} onChange={(v) => setField("departmentId", v)} options={deptOptions} required placeholder="Select department" />
-          <FormInput label="Position" value={form.position} onChange={(v) => setField("position", v)} required />
+          <FormSelect label="Job Role" value={form.position} onChange={(v) => setField("position", v)} options={roleOptions} required placeholder="Select role" />
           <FormInput label="Hire Date" value={form.hireDate} onChange={(v) => setField("hireDate", v)} type="date" required />
           <FormInput label="Salary" value={form.salary} onChange={(v) => setField("salary", v)} type="number" required />
           <FormSelect label="Employment Type" value={form.employmentType} onChange={(v) => setField("employmentType", v)} options={[
@@ -253,41 +261,49 @@ export default function EmployeeList() {
         </div>
       </Modal>
 
-      {/* View Modal */}
       <Modal open={showView} onClose={() => { setShowView(false); setViewEmployee(null); }} title="Employee Details" size="lg">
         {viewEmployee && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              ["Code", viewEmployee.employeeCode],
-              ["Name", `${viewEmployee.firstName} ${viewEmployee.lastName}`],
-              ["Email", viewEmployee.email],
-              ["Phone", viewEmployee.phone || "—"],
-              ["Department", viewEmployee.department?.name || "—"],
-              ["Position", viewEmployee.position],
-              ["Hire Date", formatDate(viewEmployee.hireDate)],
-              ["Salary", formatCurrency(viewEmployee.salary)],
-              ["Employment Type", viewEmployee.employmentType.replace("_", " ")],
-              ["Status", viewEmployee.status],
-              ["Address", viewEmployee.address || "—"],
-              ["Emergency Contact", viewEmployee.emergencyContact || "—"],
-            ].map(([label, value]) => (
-              <div key={label}>
-                <p className="text-[10px] font-medium text-[#9B93B8] uppercase">{label}</p>
-                <p className="text-sm text-[#1E1B2E] dark:text-[#EDE9FE]">{value}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[
+                ["Code", viewEmployee.employeeCode],
+                ["Name", `${viewEmployee.firstName} ${viewEmployee.lastName}`],
+                ["Email", viewEmployee.email],
+                ["Phone", viewEmployee.phone || "—"],
+                ["Department", viewEmployee.department?.name || "—"],
+                ["Position", viewEmployee.position],
+                ["Hire Date", formatDate(viewEmployee.hireDate)],
+                ["Salary", formatCurrency(viewEmployee.salary)],
+                ["Employment Type", viewEmployee.employmentType.replace("_", " ")],
+                ["Status", viewEmployee.status],
+                ["Address", viewEmployee.address || "—"],
+                ["Emergency Contact", viewEmployee.emergencyContact || "—"],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <p className="text-[10px] font-medium text-[#9B93B8] uppercase">{label}</p>
+                  <p className="text-sm text-[#1E1B2E] dark:text-[#EDE9FE]">{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-[#E8E4F3] dark:border-[#2E2850]">
+              <Button variant="ghost" onClick={() => { setShowView(false); openEdit(viewEmployee); }}>
+                <Edit size={14} /> Edit
+              </Button>
+              <Button variant="danger" onClick={() => { setDeleteId(viewEmployee.id); setShowDelete(true); }}>
+                <Trash2 size={14} /> Delete
+              </Button>
+            </div>
+          </>
         )}
       </Modal>
 
-      {/* Delete Confirm */}
       <ConfirmDialog
         open={showDelete}
         onClose={() => { setShowDelete(false); setDeleteId(null); }}
         onConfirm={handleDelete}
-        title="Terminate Employee"
-        message="Are you sure you want to terminate this employee? This action will change their status to terminated."
-        confirmLabel="Terminate"
+        title="Delete Employee"
+        message="Are you sure you want to delete this employee? This will permanently remove them and all related records."
+        confirmLabel="Delete"
         loading={saving}
       />
     </PageWrapper>

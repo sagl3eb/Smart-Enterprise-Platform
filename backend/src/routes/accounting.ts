@@ -1,41 +1,39 @@
 import { Router } from "express";
 import accountingController from "../controllers/accounting";
 import { authenticate } from "../middleware/auth";
-import { requireRole, requireMinRole } from "../middleware/rbac";
+import { attachScope } from "../middleware/callerScope";
+import { blockViewerWrites, blockSuperAdminModuleWrites } from "../middleware/rbac";
 
 const router = Router();
 router.use(authenticate);
+router.use(attachScope);
+router.use(blockViewerWrites);
+router.use(blockSuperAdminModuleWrites);
 
-// ─── Trial Balance ─────────────────────────────────────────
 router.get("/trial-balance", accountingController.getTrialBalance);
 
-// ─── Chart of Accounts ─────────────────────────────────────
 router.get("/accounts", accountingController.getChartOfAccounts);
 router.get("/accounts/:id", accountingController.getAccountById);
-router.post("/accounts", requireMinRole("manager"), accountingController.createAccount);
-router.put("/accounts/:id", requireMinRole("manager"), accountingController.updateAccount);
+router.post("/accounts", accountingController.createAccount);
+router.put("/accounts/:id", accountingController.updateAccount);
 
-// ─── Journal Entries ───────────────────────────────────────
 router.get("/journal-entries", accountingController.getJournalEntries);
 router.get("/journal-entries/:id", accountingController.getJournalEntryById);
-router.post("/journal-entries", requireMinRole("manager"), accountingController.createJournalEntry);
-router.put("/journal-entries/:id/post", requireMinRole("manager"), accountingController.postJournalEntry);
-router.put("/journal-entries/:id/void", requireRole("admin"), accountingController.voidJournalEntry);
+router.post("/journal-entries", accountingController.createJournalEntry);
+router.put("/journal-entries/:id/post", accountingController.postJournalEntry);
+router.put("/journal-entries/:id/void", accountingController.voidJournalEntry);
 
-// ─── Invoices ──────────────────────────────────────────────
 router.get("/invoices", accountingController.getInvoices);
 router.get("/invoices/summary", accountingController.getInvoiceSummary);
 router.get("/invoices/:id", accountingController.getInvoiceById);
-router.post("/invoices", requireMinRole("employee"), accountingController.createInvoice);
-router.put("/invoices/:id/status", requireMinRole("manager"), accountingController.updateInvoiceStatus);
+router.post("/invoices", accountingController.createInvoice);
+router.put("/invoices/:id/status", accountingController.updateInvoiceStatus);
 
-// ─── Payments ──────────────────────────────────────────────
 router.get("/payments", accountingController.getPayments);
-router.post("/payments", requireMinRole("employee"), accountingController.recordPayment);
+router.post("/payments", accountingController.recordPayment);
 
-// ─── Tax Records ───────────────────────────────────────────
 router.get("/tax-records", accountingController.getTaxRecords);
-router.post("/tax-records", requireMinRole("manager"), accountingController.createTaxRecord);
-router.put("/tax-records/:id", requireMinRole("manager"), accountingController.updateTaxRecord);
+router.post("/tax-records", accountingController.createTaxRecord);
+router.put("/tax-records/:id", accountingController.updateTaxRecord);
 
 export default router;

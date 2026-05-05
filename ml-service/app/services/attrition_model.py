@@ -23,12 +23,9 @@ from sklearn.metrics import (
     roc_curve
 )
 
-# Try importing LightGBM (preferred), fall back to sklearn GradientBoosting
-try:
-    import lightgbm as lgb
-    HAS_LIGHTGBM = True
-except ImportError:
-    HAS_LIGHTGBM = False
+# LightGBM is required — no fallback. If the import fails the service should
+# raise a clear error rather than silently using a slower/less-accurate model.
+import lightgbm as lgb
 
 import warnings
 warnings.filterwarnings('ignore')
@@ -332,48 +329,32 @@ class EnhancedAttritionModel:
             results['random_forest'] = self.metrics['random_forest']
             print(f"  Random Forest trained in {rf_time:.1f}s — Accuracy: {self.metrics['random_forest']['accuracy']:.4f}")
         
-        # --- Model 2: LightGBM / Gradient Boosting ---
+        # --- Model 2: LightGBM (required, no fallback) ---
         if 'gradient_boosting' in models_to_train:
-            if HAS_LIGHTGBM:
-                print("\nTraining LightGBM...")
-                gb_start = time.time()
-                gb = lgb.LGBMClassifier(
-                    n_estimators=500,
-                    max_depth=15,
-                    learning_rate=0.05,
-                    num_leaves=63,
-                    min_child_samples=20,
-                    subsample=0.8,
-                    colsample_bytree=0.8,
-                    reg_alpha=0.1,
-                    reg_lambda=0.1,
-                    random_state=42,
-                    n_jobs=-1,
-                    is_unbalance=True,
-                    verbose=-1
-                )
-                gb.fit(
-                    X_train, y_train,
-                    eval_set=[(X_val, y_val)],
-                    callbacks=[lgb.log_evaluation(period=0)]
-                )
-                gb_time = time.time() - gb_start
-                model_label = 'LightGBM'
-            else:
-                print("\nTraining Gradient Boosting (sklearn fallback — LightGBM not installed)...")
-                gb_start = time.time()
-                gb = GradientBoostingClassifier(
-                    n_estimators=300,
-                    max_depth=10,
-                    learning_rate=0.05,
-                    min_samples_split=5,
-                    min_samples_leaf=2,
-                    subsample=0.8,
-                    random_state=42
-                )
-                gb.fit(X_train, y_train)
-                gb_time = time.time() - gb_start
-                model_label = 'Gradient Boosting (sklearn)'
+            print("\nTraining LightGBM...")
+            gb_start = time.time()
+            gb = lgb.LGBMClassifier(
+                n_estimators=500,
+                max_depth=15,
+                learning_rate=0.05,
+                num_leaves=63,
+                min_child_samples=20,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                reg_alpha=0.1,
+                reg_lambda=0.1,
+                random_state=42,
+                n_jobs=-1,
+                is_unbalance=True,
+                verbose=-1
+            )
+            gb.fit(
+                X_train, y_train,
+                eval_set=[(X_val, y_val)],
+                callbacks=[lgb.log_evaluation(period=0)]
+            )
+            gb_time = time.time() - gb_start
+            model_label = 'LightGBM'
             
             self.models['gradient_boosting'] = gb
             self.is_trained['gradient_boosting'] = True

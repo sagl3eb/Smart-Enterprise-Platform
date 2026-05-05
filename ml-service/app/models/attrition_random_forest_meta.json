@@ -5,7 +5,7 @@
     "recall": 0.7203011056222065,
     "f1_score": 0.7214041701024856,
     "auc_roc": 0.8273307814768309,
-    "training_time": 6.25,
+    "training_time": 6.5,
     "test_samples": 8940,
     "cv_accuracy_mean": 0.7526428011561259,
     "cv_accuracy_std": 0.00353070834034942,
@@ -71,5 +71,5 @@
       "employee_recognition"
     ]
   },
-  "trained_at": "2026-04-09T11:22:42.673121"
+  "trained_at": "2026-04-13T04:06:50.961328"
 }

@@ -1,46 +1,47 @@
 import { Router } from "express";
 import ictController from "../controllers/ict";
 import { authenticate } from "../middleware/auth";
-import { requireRole, requireMinRole } from "../middleware/rbac";
+import { attachScope } from "../middleware/callerScope";
+import { blockViewerWrites, blockSuperAdminModuleWrites } from "../middleware/rbac";
 
 const router = Router();
 router.use(authenticate);
+router.use(attachScope);
+router.use(blockViewerWrites);
+router.use(blockSuperAdminModuleWrites);
 
-// ─── Stats ─────────────────────────────────────────────────
+// Module access is the gate. Any authenticated user whose admin granted them
+// ICT module access can perform any ICT operation within their org.
+
 router.get("/assets/stats", ictController.getAssetStats);
 router.get("/tickets/stats", ictController.getTicketStats);
 router.get("/tickets/summary", ictController.getTicketSummary);
 
-// ─── Assets ────────────────────────────────────────────────
 router.get("/assets", ictController.getAssets);
 router.get("/assets/:id", ictController.getAssetById);
-router.post("/assets", requireMinRole("manager"), ictController.createAsset);
-router.put("/assets/:id", requireMinRole("manager"), ictController.updateAsset);
-router.delete("/assets/:id", requireRole("admin"), ictController.deleteAsset);
+router.post("/assets", ictController.createAsset);
+router.put("/assets/:id", ictController.updateAsset);
+router.delete("/assets/:id", ictController.deleteAsset);
 
-// ─── Software Licenses ─────────────────────────────────────
 router.get("/licenses", ictController.getSoftwareLicenses);
 router.get("/licenses/:id", ictController.getSoftwareLicenseById);
-router.post("/licenses", requireMinRole("manager"), ictController.createSoftwareLicense);
-router.put("/licenses/:id", requireMinRole("manager"), ictController.updateSoftwareLicense);
-router.delete("/licenses/:id", requireRole("admin"), ictController.deleteSoftwareLicense);
+router.post("/licenses", ictController.createSoftwareLicense);
+router.put("/licenses/:id", ictController.updateSoftwareLicense);
+router.delete("/licenses/:id", ictController.deleteSoftwareLicense);
 
-// ─── IT Tickets ────────────────────────────────────────────
 router.get("/tickets", ictController.getItTickets);
 router.get("/tickets/:id", ictController.getItTicketById);
 router.post("/tickets", ictController.createItTicket);
-router.put("/tickets/:id", requireMinRole("employee"), ictController.updateItTicket);
-router.delete("/tickets/:id", requireRole("admin"), ictController.deleteItTicket);
+router.put("/tickets/:id", ictController.updateItTicket);
+router.delete("/tickets/:id", ictController.deleteItTicket);
 
-// ─── Network Devices ───────────────────────────────────────
 router.get("/network-devices", ictController.getNetworkDevices);
 router.get("/network-devices/:id", ictController.getNetworkDeviceById);
-router.post("/network-devices", requireMinRole("manager"), ictController.createNetworkDevice);
-router.put("/network-devices/:id", requireMinRole("manager"), ictController.updateNetworkDevice);
-router.delete("/network-devices/:id", requireRole("admin"), ictController.deleteNetworkDevice);
+router.post("/network-devices", ictController.createNetworkDevice);
+router.put("/network-devices/:id", ictController.updateNetworkDevice);
+router.delete("/network-devices/:id", ictController.deleteNetworkDevice);
 
-// ─── System Health ─────────────────────────────────────────
 router.get("/health-logs", ictController.getSystemHealthLogs);
-router.post("/health-logs", requireMinRole("employee"), ictController.createSystemHealthLog);
+router.post("/health-logs", ictController.createSystemHealthLog);
 
 export default router;

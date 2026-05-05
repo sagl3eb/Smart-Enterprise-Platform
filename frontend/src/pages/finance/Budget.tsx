@@ -3,7 +3,7 @@ import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardHeader, CardBody, StatCard, Badge, LoadingSpinner } from "../../components/ui/Card";
 import { Modal, FormInput, FormSelect, FormTextarea, Button, Toast } from "../../components/ui/Modal";
 import { BarChartWidget, DonutChartWidget } from "../../components/charts/Charts";
-import { DollarSign, TrendingUp, PieChart, AlertTriangle, Plus } from "lucide-react";
+import { DollarSign, TrendingUp, PieChart, AlertTriangle, Plus, FileBarChart } from "lucide-react";
 import { formatCurrency, formatPercent } from "../../utils/formatters";
 import api from "../../api/client";
 
@@ -66,25 +66,30 @@ export default function Budget() {
 
   if (loading || !summary) return <PageWrapper title="Budget Overview" subtitle="Finance"><LoadingSpinner /></PageWrapper>;
 
-  const expenseCategories = summary.byCategory.filter((c) => c.categoryType === "expense");
-  const donutData = expenseCategories.map((c) => ({ name: c.category, value: c.spent }));
-  const barData = expenseCategories.map((c) => ({ name: c.category, Allocated: c.allocated / 1000, Spent: c.spent / 1000 }));
+  // Show every category that isn't pure revenue. Categories may use varied types
+  // ("operational", "capital", "expense", etc.) depending on the org's seed.
+  const spendingCategories = summary.byCategory.filter((c) => (c.categoryType || "").toLowerCase() !== "revenue");
+  const donutData = spendingCategories.filter((c) => c.spent > 0).map((c) => ({ name: c.category, value: c.spent }));
+  const barData = spendingCategories.map((c) => ({ name: c.category, Allocated: c.allocated / 1000, Spent: c.spent / 1000 }));
   const catOptions = categories.map((c) => ({ value: c.id, label: `${c.name} (${c.code})` }));
 
   return (
-    <PageWrapper title="Budget Overview" subtitle={`Finance — FY ${summary.fiscalYear}`}>
+    <PageWrapper title="Budget Overview" subtitle={`Finance - FY ${summary.fiscalYear}`}>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Allocated" value={formatCurrency(summary.totalAllocated)} icon={<DollarSign size={20} />} />
-        <StatCard title="Total Spent" value={formatCurrency(summary.totalSpent)} change={5.2} subtitle="vs last quarter" icon={<TrendingUp size={20} />} />
+        <StatCard title="Total Spent" value={formatCurrency(summary.totalSpent)} icon={<TrendingUp size={20} />} />
         <StatCard title="Remaining" value={formatCurrency(summary.totalRemaining)} icon={<PieChart size={20} />} />
         <StatCard title="Utilization" value={formatPercent(summary.utilizationRate)} icon={<AlertTriangle size={20} />} />
       </div>
 
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <Button onClick={() => { setBudgetForm(emptyBudgetForm); setShowBudgetForm(true); }}><Plus size={16} /> Add Budget</Button>
         <Button variant="secondary" onClick={() => { setCategoryForm(emptyCategoryForm); setShowCategoryForm(true); }}><Plus size={16} /> Add Category</Button>
+        <a href="/finance/statements" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-[10px] text-sm font-medium bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#5B21B6] hover:bg-[#5B21B6] hover:text-white transition-colors ml-auto">
+          <FileBarChart size={14} /> Open Financial Statements
+        </a>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

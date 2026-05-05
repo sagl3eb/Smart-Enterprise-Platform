@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import logger from "../utils/logger";
+import { convertDecimals } from "../utils/decimal";
 
 const prisma = new PrismaClient({
   log: [
@@ -7,6 +8,12 @@ const prisma = new PrismaClient({
     { emit: "event", level: "error" },
     { emit: "event", level: "warn" },
   ],
+});
+
+// Auto-convert all Prisma Decimal fields to plain numbers in query results
+prisma.$use(async (params, next) => {
+  const result = await next(params);
+  return convertDecimals(result);
 });
 
 prisma.$on("error", (event) => {

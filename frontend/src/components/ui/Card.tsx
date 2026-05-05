@@ -18,7 +18,8 @@ export function Card({ children, className, onClick }: CardProps) {
         "rounded-[16px] bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850]",
         "shadow-[0_1px_4px_rgba(91,33,182,0.08),0_4px_16px_rgba(91,33,182,0.05)]",
         "dark:shadow-[0_1px_4px_rgba(0,0,0,0.4)]",
-        onClick && "cursor-pointer hover:border-[#5B21B6]/30 transition-colors",
+        "transition-all duration-200 hover:shadow-[0_2px_8px_rgba(91,33,182,0.12),0_8px_24px_rgba(91,33,182,0.08)]",
+        onClick && "cursor-pointer hover:border-[#5B21B6]/30",
         className
       )}
     >
@@ -142,9 +143,30 @@ export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 export function EmptyState({ title, description, icon }: { title: string; description?: string; icon?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      {icon && <div className="mb-3 text-[#9B93B8]">{icon}</div>}
+      {icon && <div className="mb-4 text-[#9B93B8] opacity-50">{icon}</div>}
       <p className="text-sm font-medium text-[#4C4566] dark:text-[#B8AEDD]">{title}</p>
-      {description && <p className="text-xs text-[#9B93B8] mt-1">{description}</p>}
+      {description && <p className="text-xs text-[#9B93B8] mt-1 max-w-xs">{description}</p>}
     </div>
+  );
+}
+
+// ─── Skeleton Loader ──────────────────────────────────────
+
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("animate-pulse bg-[#E8E4F3] dark:bg-[#2E2850] rounded-[8px]", className)} />
+  );
+}
+
+export function CardSkeleton() {
+  return (
+    <Card>
+      <CardBody>
+        <Skeleton className="h-4 w-1/3 mb-3" />
+        <Skeleton className="h-8 w-1/2 mb-4" />
+        <Skeleton className="h-3 w-full mb-2" />
+        <Skeleton className="h-3 w-2/3" />
+      </CardBody>
+    </Card>
   );
 }

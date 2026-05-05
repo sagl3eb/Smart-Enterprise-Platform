@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SEP · The Ledger — Edition Daily</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@300;400;500;600&family=Archivo:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:    #F8F7FF;
+    --paper-2:  #EDE9FE;
+    --ink:      #13102A;
+    --ink-soft: #3A2E66;
+    --rule:     #13102A;
+    --hairline: rgba(19,16,42,0.18);
+    --vermilion:#5B21B6;
+    --sage:     #7C3AED;
+    --ochre:    #8B5CF6;
+  }
+  *{ box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+  html, body { margin: 0; padding: 0; }
+  body{
+    font-family: 'Archivo', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(91,33,182,0.08), transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(124,58,237,0.10), transparent 40%);
+  }
+
+  .showcase-nav {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px; padding: 9px 16px;
+    background: rgba(19,16,42,0.9); backdrop-filter: blur(8px);
+    border-radius: 999px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.16em;
+    z-index: 100; color: #F1EEFF; text-transform: uppercase;
+  }
+  .showcase-nav a { color: #F1EEFF; text-decoration: none; opacity: 0.8; transition: opacity 0.2s; }
+  .showcase-nav a:hover { opacity: 1; color: #7C3AED; }
+  .showcase-nav .sep { opacity: 0.3; }
+  .showcase-nav .here { color: #7C3AED; opacity: 1; }
+  .serif{ font-family:'Instrument Serif', serif; font-weight:400; }
+  .mono { font-family:'IBM Plex Mono', monospace; }
+  .display{ font-family:'Archivo', sans-serif; font-weight:800; letter-spacing:-0.02em; }
+  .uppercase{ text-transform:uppercase; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* grain */
+  body::before{
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:100; opacity:0.22; mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .frame{ max-width: 1360px; margin: 0 auto; padding: 28px 36px 90px; position: relative; }
+
+  /* ── Masthead ── */
+  .masthead{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    border-top: 4px solid var(--ink); border-bottom: 1px solid var(--ink);
+    padding: 18px 0 14px;
+  }
+  .masthead .title{
+    font-family:'Instrument Serif', serif; font-size: clamp(44px, 5.5vw, 88px);
+    line-height: 0.95; letter-spacing: -0.01em; font-weight: 400;
+  }
+  .masthead .title em{ font-style:italic; font-family:'Instrument Serif', serif; }
+  .masthead .meta{ display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color: var(--ink-soft); }
+  .masthead .meta strong{ color: var(--ink); letter-spacing: 0.22em; }
+
+  .subhead{
+    display:flex; justify-content:space-between; align-items:center; padding: 10px 0; border-bottom: 3px double var(--ink);
+    font-family:'IBM Plex Mono', monospace; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.18em;
+  }
+  .subhead .section{ color: var(--vermilion); font-weight:500; }
+  .subhead .quote{ font-family:'Instrument Serif', serif; text-transform:none; letter-spacing:0; font-style:italic; font-size:17px; color: var(--ink-soft); }
+
+  /* ── Layout grid ── */
+  .cols{ display:grid; grid-template-columns: 3fr 9fr; gap: 0; border-bottom:1px solid var(--ink); }
+  .col{ padding: 28px 0; }
+  .col + .col{ border-left: 1px solid var(--hairline); padding-left: 28px; }
+  .col.left{ padding-right: 28px; }
+
+  /* Hero metric */
+  .hero{
+    padding: 36px 0 28px; border-bottom: 1px solid var(--hairline); position:relative;
+  }
+  .hero .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color: var(--vermilion); }
+  .hero .number{
+    font-family:'Instrument Serif', serif;
+    font-size: clamp(110px, 15vw, 230px); line-height: 0.9; letter-spacing: -0.04em;
+    margin: 8px 0 4px; font-weight: 400;
+  }
+  .hero .unit{ font-family:'Instrument Serif', serif; font-style: italic; color: var(--ink-soft); font-size: 22px; vertical-align: super; margin-left: 8px;}
+  .hero .delta{
+    display:inline-flex; align-items:baseline; gap:8px; font-family:'IBM Plex Mono', monospace;
+    font-size: 14px; letter-spacing: 0.04em;
+  }
+  .hero .delta .up{ color: var(--sage); font-weight:600; }
+  .hero .caption{ margin-top: 14px; font-family:'Instrument Serif', serif; font-style: italic; color: var(--ink-soft); font-size: 16px; max-width: 620px; }
+  .hero .margin-note{
+    position:absolute; right: 0; top: 44px; max-width: 220px; font-family:'Instrument Serif', serif; font-size: 14px;
+    color: var(--ink-soft); font-style: italic; border-left: 1px solid var(--hairline); padding-left: 14px; line-height: 1.4;
+  }
+  .hero .margin-note span{ display:block; font-family:'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--vermilion); margin-bottom: 6px; font-style: normal; }
+
+  /* KPI strip */
+  .kpis{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-bottom:1px solid var(--ink); }
+  .kpi{ padding: 22px 22px 22px 0; border-left: 1px solid var(--hairline); padding-left: 22px; position:relative;}
+  .kpi:first-child{ border-left: 0; padding-left: 0; }
+  .kpi .label{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.2em; text-transform:uppercase; color:var(--ink-soft); }
+  .kpi .value{ font-family:'Instrument Serif', serif; font-size: 56px; line-height:1; margin-top:8px; letter-spacing:-0.015em; }
+  .kpi .value em{ font-style:italic; color: var(--vermilion); }
+  .kpi .trend{ margin-top:14px; font-family:'IBM Plex Mono', monospace; font-size:11px; display:flex; gap:10px; align-items:center; color: var(--ink-soft); }
+  .kpi .trend .good{ color: var(--sage); }
+  .kpi .trend .bad{ color: var(--vermilion); }
+  .kpi svg{ margin-top: 14px; width: 100%; height: 42px; }
+
+  /* Columns of editorial content */
+  .editorial{ display:grid; grid-template-columns: 4fr 4fr 4fr; gap: 0; }
+  .column{ padding: 30px 24px; border-left: 1px solid var(--hairline); position:relative; }
+  .column:first-child{ border-left: 0; padding-left: 0; }
+  .column:last-child{ padding-right: 0; }
+  .column h3{
+    font-family:'Instrument Serif', serif; font-weight:400; font-size: 32px; line-height:1.05; letter-spacing:-0.01em;
+    margin: 0 0 4px;
+  }
+  .column h3 em{ font-style:italic; color: var(--vermilion); }
+  .column .byline{
+    font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:0.2em; text-transform:uppercase; color: var(--ink-soft);
+    margin-bottom: 14px;
+  }
+  .dropcap::first-letter{
+    font-family:'Instrument Serif', serif; font-size: 74px; float:left; line-height:0.78; padding: 6px 8px 0 0; color: var(--vermilion);
+  }
+  .column p{ font-family:'Archivo', sans-serif; font-size: 13.5px; line-height: 1.55; color: var(--ink); }
+  .column .pull{
+    border-top:1px solid var(--ink); border-bottom:1px solid var(--ink);
+    margin:14px 0; padding:10px 0; font-family:'Instrument Serif', serif; font-style: italic; font-size: 20px; line-height: 1.25;
+  }
+  .column .stat{
+    display:flex; align-items:baseline; justify-content:space-between; border-bottom: 1px dotted var(--hairline); padding: 8px 0;
+    font-family:'IBM Plex Mono', monospace; font-size:12px;
+  }
+  .column .stat .n{ font-family:'Instrument Serif', serif; font-size: 22px; letter-spacing:-0.01em; }
+
+  /* Mini chart cards */
+  .cards{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-bottom:1px solid var(--ink); border-top:1px solid var(--ink); }
+  .card{ padding: 28px 24px; border-left:1px solid var(--hairline); position:relative; }
+  .card:first-child{ border-left: 0; }
+  .card .cap{ font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform: uppercase; letter-spacing:0.2em; color:var(--ink-soft); }
+  .card .big{ font-family:'Instrument Serif', serif; font-size: 64px; line-height: 1; letter-spacing:-0.02em; margin-top:10px; }
+  .card .big em{ font-style: italic; color: var(--sage); font-size: 28px; vertical-align: super; margin-left: 6px; }
+  .card svg{ margin-top: 12px; width: 100%; height: 80px; }
+  .card .label{ margin-top:14px; font-family:'Instrument Serif', serif; font-style: italic; font-size: 15px; color: var(--ink-soft); }
+  .card.redline::before{
+    content:''; position:absolute; left: 0; top:0; bottom:0; width: 3px; background: var(--vermilion);
+  }
+
+  /* Bars / People */
+  .bars{ display:flex; flex-direction:column; gap: 10px; margin-top: 14px; }
+  .bar-row{ display:grid; grid-template-columns: 80px 1fr 60px; align-items:center; gap: 10px; font-family:'IBM Plex Mono', monospace; font-size:11px; }
+  .bar{ height: 10px; background: var(--paper-2); position:relative; overflow:hidden; }
+  .bar > span{ display:block; height:100%; background: var(--ink); }
+  .bar.ox > span{ background: var(--ochre); }
+  .bar.sa > span{ background: var(--sage); }
+  .bar.ve > span{ background: var(--vermilion); }
+
+  /* Table */
+  .ledger-table{ width:100%; border-collapse:collapse; font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  .ledger-table th{ text-align:left; padding: 10px 8px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; font-size: 10.5px; color: var(--ink-soft); border-bottom: 1px solid var(--ink); }
+  .ledger-table td{ padding: 12px 8px; border-bottom: 1px dotted var(--hairline); vertical-align: top; }
+  .ledger-table td:first-child{ font-family:'Instrument Serif', serif; font-size: 22px; color: var(--ink); letter-spacing: -0.01em; }
+  .tag-pill{ display:inline-block; padding: 2px 9px; border-radius: 999px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .tag-pill.ok{ background: #2f4c3d; color: var(--paper); }
+  .tag-pill.warn{ background: var(--ochre); color: var(--paper); }
+  .tag-pill.bad{ background: var(--vermilion); color: var(--paper); }
+
+  /* Ticker */
+  .ticker{
+    position:fixed; bottom:0; left:0; right:0; height: 44px; background: var(--ink); color: var(--paper);
+    display:flex; align-items:center; overflow: hidden; z-index: 50; border-top: 2px solid var(--vermilion);
+    font-family:'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  }
+  .ticker .label{
+    flex-shrink: 0; background: var(--vermilion); color: var(--paper); padding: 0 16px; height: 100%; display: grid; place-items: center;
+    font-weight: 600; letter-spacing: 0.25em;
+  }
+  .ticker .track{ display: flex; gap: 44px; padding-left: 44px; animation: tick 60s linear infinite; white-space: nowrap; }
+  .ticker .item{ display: inline-flex; gap: 8px; align-items: baseline; }
+  .ticker .item .sym{ color: #F3D484; }
+  .ticker .item .up{ color: #79D49F; }
+  .ticker .item .dn{ color: #F49381; }
+  @keyframes tick { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* decorative */
+  .ornament{ display:flex; justify-content:center; align-items:center; gap: 12px; margin: 8px 0 4px; color: var(--ink-soft); font-family:'Instrument Serif', serif; font-style: italic; font-size: 16px; }
+  .ornament::before, .ornament::after{ content:''; width: 40px; border-top: 1px solid var(--hairline); }
+
+  .right-col-head{ display:flex; justify-content:space-between; align-items:baseline; }
+  .right-col-head .page{ font-family:'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform:uppercase; color: var(--ink-soft); }
+
+  /* reveal anim */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: translateY(0); } }
+  [data-reveal]{ animation: fadeUp 0.8s cubic-bezier(0.2,0.7,0.2,1) both; }
+  [data-reveal="1"]{ animation-delay:0.05s; }
+  [data-reveal="2"]{ animation-delay:0.15s; }
+  [data-reveal="3"]{ animation-delay:0.25s; }
+  [data-reveal="4"]{ animation-delay:0.35s; }
+  [data-reveal="5"]{ animation-delay:0.45s; }
+
+</style>
+</head>
+<body>
+  <nav class="showcase-nav">
+    <a href="index.html">◂ Index</a>
+    <span class="sep">·</span>
+    <a href="01-login-sanctum.html">◂ N° 01</a>
+    <span class="sep">·</span>
+    <span class="here">N° 02 Ledger</span>
+    <span class="sep">·</span>
+    <a href="03-chatbot-signal.html">N° 03 ▸</a>
+  </nav>
+  <div class="frame">
+
+    <!-- MASTHEAD -->
+    <header class="masthead" data-reveal="1">
+      <div>
+        <div class="mono uppercase" style="font-size:10.5px; letter-spacing:0.24em; margin-bottom:6px; color: var(--vermilion);">· Edition Daily · Monday, April 13th ·</div>
+        <h1 class="title">The <em>Ledger</em></h1>
+      </div>
+      <div class="meta">
+        <span>Vol. II · Nº 108</span>
+        <strong>SEP / EXECUTIVE WIRE</strong>
+        <span>08:42 GMT · 24 signals in</span>
+      </div>
+    </header>
+
+    <div class="subhead" data-reveal="2">
+      <span class="section">↳ Morning brief for the office of the CEO</span>
+      <span class="quote">"The house stays steady."</span>
+      <span>§ folio 001 / 012</span>
+    </div>
+
+    <!-- HERO METRIC -->
+    <section class="hero" data-reveal="2">
+      <div class="eyebrow">Headline Metric · Quarter-to-Date Revenue</div>
+      <div class="number tnum">$4.218<span class="unit">M</span></div>
+      <div class="delta mono uppercase tnum">
+        <span class="up">▲ 12.4%</span>
+        <span>vs. same quarter, prior year</span>
+        <span style="color:var(--ink-soft); margin-left:18px;">· Target $4.0M ✓</span>
+      </div>
+      <p class="caption">A steady number; the merit lies in the stability, not the acceleration. Margin compression in ICT is being absorbed by Accounting collections.</p>
+
+      <aside class="margin-note">
+        <span>In the margin</span>
+        Finance reports the largest single invoice of the quarter was settled by&nbsp;<em>Orchard Holdings</em> at $184,220 on April 11.
+      </aside>
+    </section>
+
+    <!-- KPIs -->
+    <section class="kpis" data-reveal="3">
+      <div class="kpi">
+        <div class="label">Active Headcount</div>
+        <div class="value tnum">1,247</div>
+        <div class="trend"><span class="good">+42 MoM</span> · attrition 1.8%</div>
+        <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#13102A" stroke-width="1.2" points="0,22 12,20 24,18 36,19 48,16 60,14 72,12 84,11 100,9"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="label">Budget Utilization</div>
+        <div class="value tnum">67<em>.3%</em></div>
+        <div class="trend"><span class="good">on plan</span> · $2.02M of $3.00M</div>
+        <svg viewBox="0 0 100 30" preserveAspectRatio="none"><rect x="0" y="22" width="12" height="8" fill="#13102A"/><rect x="14" y="18" width="12" height="12" fill="#13102A"/><rect x="28" y="14" width="12" height="16" fill="#13102A"/><rect x="42" y="10" width="12" height="20" fill="#8B5CF6"/><rect x="56" y="12" width="12" height="18" fill="#13102A"/><rect x="70" y="8" width="12" height="22" fill="#13102A"/><rect x="84" y="6" width="12" height="24" fill="#5B21B6"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="label">Open Tickets (ICT)</div>
+        <div class="value tnum">104</div>
+        <div class="trend"><span class="bad">+18 today</span> · 11 critical</div>
+        <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#5B21B6" stroke-width="1.2" points="0,24 12,22 24,20 36,19 48,15 60,12 72,10 84,7 100,4"/></svg>
+      </div>
+      <div class="kpi">
+        <div class="label">Attrition Risk · High</div>
+        <div class="value tnum">159</div>
+        <div class="trend"><span class="good">stable</span> · retention plan Q2</div>
+        <svg viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#7C3AED" stroke-width="1.2" points="0,14 12,13 24,15 36,14 48,12 60,13 72,14 84,12 100,13"/></svg>
+      </div>
+    </section>
+
+    <!-- EDITORIAL COLUMNS -->
+    <section class="editorial" data-reveal="4">
+      <article class="column">
+        <div class="byline">§ 01 · Finance Desk · by M. Torres</div>
+        <h3>Collections <em>lead</em> the quarter.</h3>
+        <p class="dropcap">Fifty-two invoices cleared between Friday and Monday, more than half from the Accounting backlog. The shape of the curve is as important as its peak — overdue items fell below 4% for the first time since the October reset.</p>
+        <div class="pull">"Slow and legible beats fast and loud; the ledger rewards patience."</div>
+        <div class="stat"><span>Outstanding</span><span class="n tnum">$312,480</span></div>
+        <div class="stat"><span>Overdue 30+</span><span class="n tnum" style="color:var(--vermilion)">$48,910</span></div>
+        <div class="stat"><span>Paid this week</span><span class="n tnum" style="color:var(--sage)">$614,220</span></div>
+      </article>
+
+      <article class="column">
+        <div class="byline">§ 02 · HR Desk · by A. Okafor</div>
+        <h3>The <em>quiet</em> rehire.</h3>
+        <p class="dropcap">Two returning hires in Logistics suggest the leaver economy has cooled. Internal mobility posts remained below the three-month average; exits are trending to voluntary causes that signal stability rather than unrest.</p>
+        <div class="bars">
+          <div class="bar-row"><span>Engineering</span><div class="bar"><span style="width:78%"></span></div><span class="tnum">78%</span></div>
+          <div class="bar-row"><span>Finance</span><div class="bar sa"><span style="width:62%"></span></div><span class="tnum">62%</span></div>
+          <div class="bar-row"><span>Logistics</span><div class="bar ox"><span style="width:84%"></span></div><span class="tnum">84%</span></div>
+          <div class="bar-row"><span>Support</span><div class="bar ve"><span style="width:41%"></span></div><span class="tnum">41%</span></div>
+        </div>
+        <div class="pull" style="font-size: 18px;">"A good company is a place people return to, not only a place they leave."</div>
+      </article>
+
+      <article class="column">
+        <div class="byline">§ 03 · Risk & Alerts · by S. Rahman</div>
+        <h3>Three <em>signals</em>, no sirens.</h3>
+        <p class="dropcap">The optimization scanner produced three suggestions of note: ICT ticket backlog, an under-utilized Q1 training budget, and a single project at Riverbend running 23% behind plan. All are recoverable inside the week.</p>
+        <div class="stat"><span>Open alerts</span><span class="n tnum">24</span></div>
+        <div class="stat"><span>Suggestions</span><span class="n tnum">7</span></div>
+        <div class="stat"><span>Resolved (7d)</span><span class="n tnum" style="color:var(--sage)">31</span></div>
+        <div class="stat"><span>Escalated</span><span class="n tnum" style="color:var(--vermilion)">2</span></div>
+      </article>
+    </section>
+
+    <div class="ornament">✦ &nbsp; desk of operations &nbsp; ✦</div>
+
+    <!-- CARDS -->
+    <section class="cards" data-reveal="5">
+      <div class="card redline">
+        <div class="cap">↗ Accounting · receivables</div>
+        <div class="big tnum">$891K <em>paid</em></div>
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+          <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5B21B6" stop-opacity="0.25"/><stop offset="1" stop-color="#5B21B6" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,32 L10,30 L20,28 L30,24 L40,22 L50,18 L60,14 L70,12 L80,10 L90,8 L100,6 L100,40 L0,40 Z" fill="url(#g1)"/>
+          <polyline fill="none" stroke="#5B21B6" stroke-width="1.2" points="0,32 10,30 20,28 30,24 40,22 50,18 60,14 70,12 80,10 90,8 100,6"/>
+        </svg>
+        <div class="label">Seven-day receivable velocity — ahead of plan by two days.</div>
+      </div>
+
+      <div class="card">
+        <div class="cap">↘ ICT · open tickets</div>
+        <div class="big tnum">104</div>
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+          <g fill="#13102A">
+            <rect x="4"  y="24" width="5" height="16"/>
+            <rect x="14" y="20" width="5" height="20"/>
+            <rect x="24" y="22" width="5" height="18"/>
+            <rect x="34" y="18" width="5" height="22"/>
+            <rect x="44" y="14" width="5" height="26"/>
+            <rect x="54" y="10" width="5" height="30"/>
+            <rect x="64" y="12" width="5" height="28" fill="#5B21B6"/>
+            <rect x="74" y="6"  width="5" height="34" fill="#5B21B6"/>
+            <rect x="84" y="4"  width="5" height="36" fill="#5B21B6"/>
+          </g>
+        </svg>
+        <div class="label">Backlog growing — recommend diverting two engineers from Project Amber.</div>
+      </div>
+
+      <div class="card">
+        <div class="cap">↗ Workforce · satisfaction</div>
+        <div class="big tnum">78.4 <em>/100</em></div>
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round" points="2,28 14,22 26,24 38,18 50,20 62,14 74,12 86,15 98,10"/>
+          <g fill="#7C3AED">
+            <circle cx="2" cy="28" r="1.8"/><circle cx="14" cy="22" r="1.8"/><circle cx="26" cy="24" r="1.8"/><circle cx="38" cy="18" r="1.8"/><circle cx="50" cy="20" r="1.8"/><circle cx="62" cy="14" r="1.8"/><circle cx="74" cy="12" r="1.8"/><circle cx="86" cy="15" r="1.8"/><circle cx="98" cy="10" r="2.8"/>
+          </g>
+        </svg>
+        <div class="label">Monthly sentiment reading; highest since Q3 last year.</div>
+      </div>
+    </section>
+
+    <!-- TABLE -->
+    <section style="padding: 36px 0 40px; border-bottom: 1px solid var(--ink);" data-reveal="5">
+      <div class="right-col-head">
+        <h3 class="serif" style="font-size: 42px; line-height:1.05; margin: 0 0 10px; font-weight: 400;">Projects <em style="font-style:italic;">in motion</em>.</h3>
+        <span class="page">Page 04 · Construction Logistics</span>
+      </div>
+
+      <table class="ledger-table tnum">
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Code</th>
+            <th>Lead</th>
+            <th style="text-align:right;">Progress</th>
+            <th style="text-align:right;">Budget</th>
+            <th style="text-align:right;">Variance</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Riverbend Pavilion</td><td>PRJ-021</td><td>J. Okafor</td><td style="text-align:right;">58%</td><td style="text-align:right;">$2.4M</td><td style="text-align:right; color: var(--vermilion);">−$114K</td><td><span class="tag-pill bad">Behind</span></td></tr>
+          <tr><td>Marlow Industrial</td><td>PRJ-017</td><td>S. Park</td><td style="text-align:right;">82%</td><td style="text-align:right;">$1.8M</td><td style="text-align:right; color: var(--sage);">+$18K</td><td><span class="tag-pill ok">On Track</span></td></tr>
+          <tr><td>Ashford Terminals</td><td>PRJ-024</td><td>R. Veliz</td><td style="text-align:right;">31%</td><td style="text-align:right;">$4.1M</td><td style="text-align:right;">—</td><td><span class="tag-pill warn">Watch</span></td></tr>
+          <tr><td>Westpoint Atrium</td><td>PRJ-019</td><td>A. Laurent</td><td style="text-align:right;">96%</td><td style="text-align:right;">$0.9M</td><td style="text-align:right; color: var(--sage);">+$2K</td><td><span class="tag-pill ok">Finishing</span></td></tr>
+          <tr><td>Orchard Cold Storage</td><td>PRJ-026</td><td>M. Hensley</td><td style="text-align:right;">12%</td><td style="text-align:right;">$3.2M</td><td style="text-align:right;">—</td><td><span class="tag-pill warn">New</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CLOSING -->
+    <section style="display:grid; grid-template-columns: 2fr 3fr 2fr; gap: 28px; padding: 30px 0 70px; align-items:start;" data-reveal="5">
+      <div>
+        <div class="mono uppercase" style="font-size: 10.5px; letter-spacing: 0.22em; color: var(--ink-soft);">Signed</div>
+        <div class="serif" style="font-size: 36px; line-height: 1.05; margin-top: 8px;">— the desk.</div>
+        <div class="mono" style="font-size: 11px; color: var(--ink-soft); margin-top: 10px;">N° 108 · composed by the Platform</div>
+      </div>
+      <div>
+        <div class="mono uppercase" style="font-size: 10.5px; letter-spacing: 0.22em; color: var(--vermilion);">Recommended reading</div>
+        <ul style="margin: 10px 0 0; padding-left: 18px; font-family:'Instrument Serif', serif; font-size: 19px; line-height: 1.45;">
+          <li>Why the Riverbend variance is a <em>schedule</em> problem, not a budget one.</li>
+          <li>Two quiet wins in Logistics that will not show up on any chart until May.</li>
+          <li>A short note on why the ICT backlog deserves two engineers, not three.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="mono uppercase" style="font-size: 10.5px; letter-spacing: 0.22em; color: var(--ink-soft);">Next edition</div>
+        <div class="serif" style="font-size: 22px; line-height: 1.15; margin-top: 8px;">Tomorrow, 07:00 GMT — the <em>quarterly close</em>.</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <div class="label">LIVE WIRE</div>
+    <div class="track">
+      <span class="item"><span class="sym">HR·</span>+42 MoM</span>
+      <span class="item"><span class="sym">FIN·</span>Q1 $4.22M <span class="up">▲</span></span>
+      <span class="item"><span class="sym">AR·</span>$891K paid (7d)</span>
+      <span class="item"><span class="sym">ICT·</span>104 tickets <span class="dn">▼</span> 11 crit</span>
+      <span class="item"><span class="sym">PRJ·</span>Riverbend 58% <span class="dn">−23%</span></span>
+      <span class="item"><span class="sym">ATR·</span>159 high risk — stable</span>
+      <span class="item"><span class="sym">ACC·</span>Overdue 3.9% <span class="up">▲</span></span>
+      <span class="item"><span class="sym">SAT·</span>78.4/100 <span class="up">▲</span></span>
+      <!-- duplicate for seamless loop -->
+      <span class="item"><span class="sym">HR·</span>+42 MoM</span>
+      <span class="item"><span class="sym">FIN·</span>Q1 $4.22M <span class="up">▲</span></span>
+      <span class="item"><span class="sym">AR·</span>$891K paid (7d)</span>
+      <span class="item"><span class="sym">ICT·</span>104 tickets <span class="dn">▼</span> 11 crit</span>
+      <span class="item"><span class="sym">PRJ·</span>Riverbend 58% <span class="dn">−23%</span></span>
+      <span class="item"><span class="sym">ATR·</span>159 high risk — stable</span>
+      <span class="item"><span class="sym">ACC·</span>Overdue 3.9% <span class="up">▲</span></span>
+      <span class="item"><span class="sym">SAT·</span>78.4/100 <span class="up">▲</span></span>
+    </div>
+  </div>
+
+</body>
+</html>

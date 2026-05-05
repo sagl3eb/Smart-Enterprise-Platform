@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardBody, StatCard, Badge, LoadingSpinner, EmptyState } from "../../components/ui/Card";
-import { Modal, FormInput, FormSelect, FormTextarea, Button, Toast } from "../../components/ui/Modal";
-import { Ticket, Plus, Search, AlertCircle, Clock, CheckCircle, Loader } from "lucide-react";
+import { Modal, FormInput, FormSelect, FormTextarea, Button, ConfirmDialog, Toast } from "../../components/ui/Modal";
+import { Ticket, Plus, Search, AlertCircle, Clock, CheckCircle, Loader, MessageSquare, Send } from "lucide-react";
 import { formatRelativeTime, severityColor, statusColor } from "../../utils/formatters";
 import api from "../../api/client";
 import type { ItTicket } from "../../types";
+import ICTSubNav from "./ICTSubNav";
+import useAuthStore from "../../store/authStore";
+import { parseComments, appendComment } from "../../utils/ticketComments";
 
 const emptyForm = { ticketNumber: "", title: "", description: "", category: "Software", priority: "medium", reportedBy: "", assignedTo: "" };
 
 export default function Tickets() {
+  const user = useAuthStore((s) => s.user);
+  const authorName = user ? `${user.firstName} ${user.lastName}`.trim() || user.email : "Unknown";
   const [tickets, setTickets] = useState<ItTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -24,10 +29,15 @@ export default function Tickets() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
+  const [commentDraft, setCommentDraft] = useState("");
+  const [addingComment, setAddingComment] = useState(false);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [pendingCloseId, setPendingCloseId] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "20" });
+      const params = new URLSearchParams({ limit: "100" });
       if (statusFilter) params.set("status", statusFilter);
       if (priorityFilter) params.set("priority", priorityFilter);
       if (search) params.set("search", search);
@@ -46,7 +56,28 @@ export default function Tickets() {
     setEditingId(null); setShowForm(true);
   };
 
-  const openDetail = (ticket: ItTicket) => { setSelectedTicket(ticket); setShowDetail(true); };
+  const openDetail = (ticket: ItTicket) => { setSelectedTicket(ticket); setCommentDraft(""); setShowDetail(true); };
+
+  const refreshSelected = async (id: string) => {
+    try {
+      const res = await api.get(`/ict/tickets/${id}`);
+      if (res.data?.data) setSelectedTicket(res.data.data);
+    } catch { /* silent */ }
+  };
+
+  const addComment = async () => {
+    if (!selectedTicket || !commentDraft.trim()) return;
+    setAddingComment(true);
+    try {
+      const nextResolution = appendComment(selectedTicket.resolution, authorName, commentDraft.trim(), "comment");
+      await api.put(`/ict/tickets/${selectedTicket.id}`, { resolution: nextResolution });
+      setCommentDraft("");
+      await refreshSelected(selectedTicket.id);
+      fetchData();
+    } catch {
+      setToast({ message: "Failed to add comment", type: "error" });
+    } finally { setAddingComment(false); }
+  };
 
   const handleSave = async () => {
     if (!form.title || !form.description || !form.category || !form.reportedBy) {
@@ -68,12 +99,24 @@ export default function Tickets() {
     } finally { setSaving(false); }
   };
 
-  const updateStatus = async (id: string, status: string, resolution?: string) => {
+  const updateStatus = async (id: string, status: string, resolutionBody?: string) => {
     try {
-      await api.put(`/ict/tickets/${id}`, { status, resolution });
+      const current = selectedTicket?.id === id ? selectedTicket : null;
+      const payload: { status: string; resolution?: string } = { status };
+      if (resolutionBody && resolutionBody.trim()) {
+        payload.resolution = appendComment(current?.resolution, authorName, resolutionBody.trim(), "resolution");
+      }
+      await api.put(`/ict/tickets/${id}`, payload);
       setToast({ message: `Ticket ${status.replace("_", " ")}`, type: "success" });
       setShowDetail(false); fetchData();
     } catch { setToast({ message: "Failed to update status", type: "error" }); }
+  };
+
+  const confirmCloseTicket = async () => {
+    if (!pendingCloseId) return;
+    await updateStatus(pendingCloseId, "closed");
+    setShowCloseConfirm(false);
+    setPendingCloseId(null);
   };
 
   const openCount = tickets.filter((t) => t.status === "open").length;
@@ -91,7 +134,8 @@ export default function Tickets() {
   };
 
   return (
-    <PageWrapper title="IT Tickets" subtitle="ICT Management — Support tickets">
+    <PageWrapper title="IT Tickets" subtitle="ICT Management - Support tickets">
+      <ICTSubNav />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -191,12 +235,45 @@ export default function Tickets() {
                 </div>
               ))}
             </div>
-            {selectedTicket.resolution && (
-              <div className="mb-4 p-3 rounded-[10px] bg-emerald-50 dark:bg-emerald-900/20">
-                <p className="text-[10px] font-medium text-emerald-600 uppercase mb-1">Resolution</p>
-                <p className="text-sm text-emerald-700 dark:text-emerald-400">{selectedTicket.resolution}</p>
+            {/* Comment thread (stored in resolution column) */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare size={14} className="text-[#5B21B6]" />
+                <p className="text-[10px] font-medium text-[#9B93B8] uppercase">Activity &amp; Comments</p>
               </div>
-            )}
+              {(() => {
+                const comments = parseComments(selectedTicket.resolution);
+                if (comments.length === 0) {
+                  return <p className="text-xs text-[#9B93B8] italic">No comments yet.</p>;
+                }
+                return (
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {comments.map((c, i) => (
+                      <div key={i} className={`p-3 rounded-[10px] border ${c.kind === "resolution"
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+                        : "bg-[#F8F7FF] dark:bg-[#0E0B1F] border-[#E8E4F3] dark:border-[#2E2850]"}`}>
+                        <div className="flex items-center justify-between gap-2 mb-1">
+                          <span className="text-xs font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">
+                            {c.author}
+                            {c.kind === "resolution" && <Badge className="ml-2" variant="success">resolution</Badge>}
+                          </span>
+                          <span className="text-[10px] text-[#9B93B8]">{c.at ? formatRelativeTime(c.at) : ""}</span>
+                        </div>
+                        <p className={`text-sm whitespace-pre-wrap ${c.kind === "resolution" ? "text-emerald-700 dark:text-emerald-400" : "text-[#4C4566] dark:text-[#B8AEDD]"}`}>{c.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              {selectedTicket.status !== "closed" && (
+                <div className="flex items-start gap-2 mt-3">
+                  <FormTextarea label="" value={commentDraft} onChange={setCommentDraft} rows={2} placeholder="Add a comment..." />
+                  <Button onClick={addComment} loading={addingComment} disabled={!commentDraft.trim()}>
+                    <Send size={14} /> Post
+                  </Button>
+                </div>
+              )}
+            </div>
             {selectedTicket.status !== "resolved" && selectedTicket.status !== "closed" && (
               <div className="flex gap-2 pt-4 border-t border-[#E8E4F3] dark:border-[#2E2850]">
                 {selectedTicket.status === "open" && (
@@ -206,12 +283,21 @@ export default function Tickets() {
                   const resolution = prompt("Resolution notes (optional):");
                   updateStatus(selectedTicket.id, "resolved", resolution || undefined);
                 }}>Resolve</Button>
-                <Button variant="ghost" onClick={() => updateStatus(selectedTicket.id, "closed")}>Close</Button>
+                <Button variant="ghost" onClick={() => { setPendingCloseId(selectedTicket.id); setShowCloseConfirm(true); }}>Close</Button>
               </div>
             )}
           </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={showCloseConfirm}
+        onClose={() => { setShowCloseConfirm(false); setPendingCloseId(null); }}
+        onConfirm={confirmCloseTicket}
+        title="Close this ticket?"
+        message="Closing a ticket is final — it cannot be reopened from this UI. Are you sure you want to close it?"
+        confirmLabel="Yes, close ticket"
+      />
     </PageWrapper>
   );
 }

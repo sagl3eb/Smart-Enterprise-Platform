@@ -2,15 +2,23 @@ import { useState, useEffect, useCallback } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardBody, StatCard, Badge, LoadingSpinner, EmptyState } from "../../components/ui/Card";
 import { Modal, FormInput, FormSelect, FormTextarea, Button, ConfirmDialog, Toast } from "../../components/ui/Modal";
+import EmployeePicker from "../../components/ui/EmployeePicker";
 import { DonutChartWidget } from "../../components/charts/Charts";
-import { Monitor, Plus, Search, DollarSign, ShieldCheck, AlertTriangle, Edit, Trash2 } from "lucide-react";
+import { Monitor, Plus, Search, DollarSign, ShieldCheck, AlertTriangle, Edit, Trash2, Tag } from "lucide-react";
 import { formatCurrency, formatDate, statusColor } from "../../utils/formatters";
 import api from "../../api/client";
 import type { Asset } from "../../types";
+import ICTSubNav from "./ICTSubNav";
+import useAuthStore from "../../store/authStore";
+import { loadCategories, saveCategories, buildAssetTag, type CategoryPrefix } from "../../utils/assetCategories";
 
-const emptyForm = { assetTag: "", name: "", category: "Laptop", manufacturer: "", model: "", serialNumber: "", purchaseDate: "", purchasePrice: "", warrantyExpiry: "", assignedTo: "", location: "", notes: "" };
+const emptyForm = { assetTag: "", name: "", category: "Laptop", manufacturer: "", model: "", serialNumber: "", purchaseDate: "", purchasePrice: "", warrantyExpiry: "", assignedTo: "", location: "", notes: "", status: "active" };
 
 export default function Assets() {
+  const orgId = useAuthStore((s) => s.user?.organization?.id || null);
+  const canWrite = useAuthStore((s) => s.canWriteModule());
+  const [categoryOptions, setCategoryOptions] = useState<CategoryPrefix[]>(() => loadCategories(orgId));
+  const [newCat, setNewCat] = useState({ category: "", prefix: "" });
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -28,7 +36,7 @@ export default function Assets() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "20" });
+      const params = new URLSearchParams({ limit: "100" });
       if (categoryFilter) params.set("category", categoryFilter);
       if (statusFilter) params.set("status", statusFilter);
       if (search) params.set("search", search);
@@ -40,9 +48,27 @@ export default function Assets() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const persistCategories = (next: CategoryPrefix[]) => { saveCategories(orgId, next); setCategoryOptions(next); };
+  const addCategory = () => {
+    const name = newCat.category.trim();
+    const prefix = newCat.prefix.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (!name || !prefix) { setToast({ message: "Category and prefix required", type: "error" }); return; }
+    if (categoryOptions.some((c) => c.category.toLowerCase() === name.toLowerCase())) {
+      setToast({ message: "Category already exists", type: "error" }); return;
+    }
+    persistCategories([...categoryOptions, { category: name, prefix }]);
+    setNewCat({ category: "", prefix: "" });
+    setToast({ message: `Added ${name} → ${prefix}-XXX`, type: "success" });
+  };
+  const removeCategory = (name: string) => persistCategories(categoryOptions.filter((c) => c.category !== name));
+
   const setField = (key: string, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
 
-  const openCreate = () => { setForm({ ...emptyForm, assetTag: `IT-${Date.now().toString().slice(-4)}` }); setEditingId(null); setShowForm(true); };
+  const openCreate = () => {
+    const firstCat = categoryOptions[0]?.category || "Other";
+    setForm({ ...emptyForm, category: firstCat, assetTag: buildAssetTag(orgId, firstCat) });
+    setEditingId(null); setShowForm(true);
+  };
 
   const openEdit = (a: Asset) => {
     setForm({
@@ -50,15 +76,25 @@ export default function Assets() {
       model: a.model || "", serialNumber: a.serialNumber || "", purchaseDate: a.purchaseDate?.slice(0, 10) || "",
       purchasePrice: a.purchasePrice ? String(a.purchasePrice) : "", warrantyExpiry: a.warrantyExpiry?.slice(0, 10) || "",
       assignedTo: a.assignedTo || "", location: a.location || "", notes: "",
+      status: a.status || "active",
     });
     setEditingId(a.id); setShowForm(true);
+  };
+
+  // When category changes during create, regenerate the tag so it uses the right prefix.
+  const onCategoryChange = (v: string) => {
+    setForm((prev) => ({
+      ...prev,
+      category: v,
+      assetTag: editingId ? prev.assetTag : buildAssetTag(orgId, v),
+    }));
   };
 
   const handleSave = async () => {
     if (!form.name || !form.category) { setToast({ message: "Name and category required", type: "error" }); return; }
     setSaving(true);
     try {
-      const payload = { ...form, purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined, assetTag: form.assetTag || `IT-${Date.now().toString().slice(-4)}` };
+      const payload = { ...form, purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined, assetTag: form.assetTag || buildAssetTag(orgId, form.category) };
       if (editingId) {
         await api.put(`/ict/assets/${editingId}`, payload);
         setToast({ message: "Asset updated", type: "success" });
@@ -86,7 +122,8 @@ export default function Assets() {
   const statusDonut = Object.entries(assets.reduce<Record<string, number>>((acc, a) => { acc[a.status] = (acc[a.status] || 0) + 1; return acc; }, {})).map(([name, value]) => ({ name, value }));
 
   return (
-    <PageWrapper title="IT Assets" subtitle="ICT Management — Hardware inventory">
+    <PageWrapper title="IT Assets" subtitle="ICT Management - Hardware inventory">
+      <ICTSubNav />
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -115,7 +152,7 @@ export default function Assets() {
         <Button onClick={openCreate} className="ml-auto"><Plus size={16} /> Add Asset</Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         <div className="lg:col-span-3">
           {loading ? <LoadingSpinner /> : assets.length === 0 ? <EmptyState title="No assets found" icon={<Monitor size={32} />} /> : (
             <Card>
@@ -152,18 +189,64 @@ export default function Assets() {
         </div>
         <Card>
           <div className="px-5 py-4 border-b border-[#E8E4F3] dark:border-[#2E2850]"><h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">By Status</h3></div>
-          <div className="px-5 py-4">{statusDonut.length > 0 ? <DonutChartWidget data={statusDonut} height={200} innerRadius={45} outerRadius={70} /> : <p className="text-xs text-[#9B93B8] text-center py-8">No data</p>}</div>
+          <div className="px-5 py-4">
+            {statusDonut.length > 0
+              ? <DonutChartWidget data={statusDonut} height={260} innerRadius={55} outerRadius={90} />
+              : <p className="text-xs text-[#9B93B8] text-center py-8">No data</p>}
+          </div>
         </Card>
       </div>
+
+      {canWrite && (
+        <Card className="mt-6">
+          <CardBody>
+            <div className="flex items-center gap-2 mb-3">
+              <Tag size={16} className="text-[#5B21B6]" />
+              <h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">Asset Categories &amp; Tag Prefixes</h3>
+            </div>
+            <p className="text-xs text-[#9B93B8] mb-4">
+              Define categories with a short prefix (e.g. &quot;Cisco Devices&quot; → <code className="px-1 rounded bg-[#EDE9FE] dark:bg-[#2D1F5E] text-[#5B21B6]">CISCO-XXX</code>).
+              New assets auto-generate tags using the selected category&apos;s prefix.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+              {categoryOptions.map((c) => (
+                <div key={c.category} className="flex items-center justify-between px-3 py-2 rounded-[8px] border border-[#E8E4F3] dark:border-[#2E2850] bg-white dark:bg-[#16122E]">
+                  <div>
+                    <p className="text-sm font-medium text-[#1E1B2E] dark:text-[#EDE9FE]">{c.category}</p>
+                    <p className="text-xs font-mono text-[#5B21B6]">{c.prefix}-XXXX</p>
+                  </div>
+                  <button onClick={() => removeCategory(c.category)} className="p-1.5 rounded-[6px] text-[#9B93B8] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-end gap-3 pt-4 border-t border-[#E8E4F3] dark:border-[#2E2850]">
+              <div className="flex-1 min-w-[180px]">
+                <label className="block text-xs font-medium text-[#9B93B8] mb-1">Category name</label>
+                <input value={newCat.category} onChange={(e) => setNewCat((p) => ({ ...p, category: e.target.value }))} placeholder="Cisco Devices"
+                  className="w-full px-3 py-2 rounded-[8px] text-sm bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] text-[#1E1B2E] dark:text-[#EDE9FE] focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30" />
+              </div>
+              <div className="w-28">
+                <label className="block text-xs font-medium text-[#9B93B8] mb-1">Prefix</label>
+                <input value={newCat.prefix} onChange={(e) => setNewCat((p) => ({ ...p, prefix: e.target.value.toUpperCase() }))} placeholder="CISCO" maxLength={8}
+                  className="w-full px-3 py-2 rounded-[8px] text-sm font-mono bg-white dark:bg-[#16122E] border border-[#E8E4F3] dark:border-[#2E2850] text-[#1E1B2E] dark:text-[#EDE9FE] focus:outline-none focus:ring-2 focus:ring-[#5B21B6]/30" />
+              </div>
+              <Button onClick={addCategory}><Plus size={14} /> Add Category</Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editingId ? "Edit Asset" : "Add Asset"} size="lg">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormInput label="Asset Tag" value={form.assetTag} onChange={(v) => setField("assetTag", v)} disabled={!!editingId} />
           <FormInput label="Name" value={form.name} onChange={(v) => setField("name", v)} required />
-          <FormSelect label="Category" value={form.category} onChange={(v) => setField("category", v)} required options={[
-            { value: "Laptop", label: "Laptop" }, { value: "Desktop", label: "Desktop" }, { value: "Monitor", label: "Monitor" },
-            { value: "Printer", label: "Printer" }, { value: "Network", label: "Network" }, { value: "Server", label: "Server" },
-            { value: "Phone", label: "Phone" }, { value: "Other", label: "Other" },
+          <FormSelect label="Category" value={form.category} onChange={onCategoryChange} required
+            options={categoryOptions.map((c) => ({ value: c.category, label: `${c.category} (${c.prefix}-)` }))} />
+          <FormSelect label="Status" value={form.status} onChange={(v) => setField("status", v)} options={[
+            { value: "active", label: "Active" }, { value: "maintenance", label: "Maintenance" },
+            { value: "retired", label: "Retired" }, { value: "disposed", label: "Disposed" },
           ]} />
           <FormInput label="Manufacturer" value={form.manufacturer} onChange={(v) => setField("manufacturer", v)} />
           <FormInput label="Model" value={form.model} onChange={(v) => setField("model", v)} />
@@ -171,7 +254,7 @@ export default function Assets() {
           <FormInput label="Purchase Date" value={form.purchaseDate} onChange={(v) => setField("purchaseDate", v)} type="date" />
           <FormInput label="Purchase Price" value={form.purchasePrice} onChange={(v) => setField("purchasePrice", v)} type="number" />
           <FormInput label="Warranty Expiry" value={form.warrantyExpiry} onChange={(v) => setField("warrantyExpiry", v)} type="date" />
-          <FormInput label="Assigned To" value={form.assignedTo} onChange={(v) => setField("assignedTo", v)} />
+          <EmployeePicker label="Assigned To" value={form.assignedTo} onChange={(v) => setField("assignedTo", v)} />
           <FormInput label="Location" value={form.location} onChange={(v) => setField("location", v)} />
           <FormTextarea label="Notes" value={form.notes} onChange={(v) => setField("notes", v)} />
         </div>

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:15-alpine
@@ -13,7 +11,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-smart_enterprise}
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./database/schema_full.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sep_admin} -d ${POSTGRES_DB:-smart_enterprise}"]
       interval: 10s
@@ -31,7 +28,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-sep_admin}:${POSTGRES_PASSWORD:-sep_secret_2025}@postgres:5432/${POSTGRES_DB:-smart_enterprise}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-sep_access_secret_key_2025}
@@ -39,12 +36,20 @@ services:
       JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
       JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
       ML_SERVICE_URL: http://ml-service:8000
-      CORS_ORIGIN: http://localhost:5173
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/src:/app/src
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - sep-network
 
@@ -59,11 +64,17 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-sep_admin}:${POSTGRES_PASSWORD:-sep_secret_2025}@postgres:5432/${POSTGRES_DB:-smart_enterprise}?schema=public
       MODEL_DIR: /app/models
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     volumes:
-      - ./ml-service/app:/app/app
       - ml_models:/app/models
     networks:
       - sep-network
@@ -77,12 +88,11 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_API_BASE_URL: http://localhost:3000/api/v1
-      VITE_ML_API_BASE_URL: http://localhost:8000
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api/v1}
+      VITE_ML_API_BASE_URL: ${VITE_ML_API_BASE_URL:-http://localhost:8000}
     depends_on:
-      - backend
-    volumes:
-      - ./frontend/src:/app/src
+      backend:
+        condition: service_healthy
     networks:
       - sep-network
 

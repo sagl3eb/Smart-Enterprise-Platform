@@ -4,10 +4,11 @@ import logger from "../utils/logger";
 
 // ─── CHART OF ACCOUNTS ─────────────────────────────────────
 
-async function getChartOfAccounts(filters: { type?: string; isActive?: boolean; search?: string }) {
+async function getChartOfAccounts(filters: { type?: string; isActive?: boolean; search?: string; organizationId?: string }) {
   const where: Prisma.ChartOfAccountWhereInput = {};
   if (filters.type) where.type = filters.type;
   if (filters.isActive !== undefined) where.isActive = filters.isActive;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { name: { contains: filters.search, mode: "insensitive" } },
@@ -25,9 +26,9 @@ async function getChartOfAccounts(filters: { type?: string; isActive?: boolean; 
   });
 }
 
-async function getAccountById(id: string) {
-  return prisma.chartOfAccount.findUnique({
-    where: { id },
+async function getAccountById(id: string, organizationId?: string) {
+  return prisma.chartOfAccount.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       parent: { select: { id: true, accountCode: true, name: true } },
       children: { select: { id: true, accountCode: true, name: true, balance: true, type: true } },
@@ -48,9 +49,13 @@ async function createAccount(data: {
   type: string;
   parentId?: string;
   description?: string;
+  organizationId?: string | null;
 }) {
-  const existing = await prisma.chartOfAccount.findUnique({
-    where: { accountCode: data.accountCode },
+  const existing = await prisma.chartOfAccount.findFirst({
+    where: {
+      accountCode: data.accountCode,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
   });
   if (existing) throw new AccountingError("Account code already exists", 409);
 
@@ -65,6 +70,7 @@ async function createAccount(data: {
       type: data.type,
       parentId: data.parentId,
       description: data.description?.trim(),
+      organizationId: data.organizationId ?? undefined,
     },
     include: { parent: { select: { id: true, accountCode: true, name: true } } },
   });
@@ -75,8 +81,16 @@ async function createAccount(data: {
 
 async function updateAccount(
   id: string,
-  data: { name?: string; description?: string; isActive?: boolean }
+  data: { name?: string; description?: string; isActive?: boolean },
+  organizationId?: string
 ) {
+  if (organizationId) {
+    const owned = await prisma.chartOfAccount.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new AccountingError("Account not found", 404);
+  }
   return prisma.chartOfAccount.update({
     where: { id },
     data: {
@@ -97,9 +111,11 @@ async function getJournalEntries(filters: {
   startDate?: string;
   endDate?: string;
   search?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.JournalEntryWhereInput = {};
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { entryNumber: { contains: filters.search, mode: "insensitive" } },
@@ -133,9 +149,9 @@ async function getJournalEntries(filters: {
   return { entries, total };
 }
 
-async function getJournalEntryById(id: string) {
-  return prisma.journalEntry.findUnique({
-    where: { id },
+async function getJournalEntryById(id: string, organizationId?: string) {
+  return prisma.journalEntry.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       lines: {
         include: {
@@ -152,6 +168,7 @@ async function createJournalEntry(data: {
   description?: string;
   reference?: string;
   createdBy?: string;
+  organizationId?: string | null;
   lines: Array<{
     accountId: string;
     debit: number;
@@ -173,8 +190,11 @@ async function createJournalEntry(data: {
     );
   }
 
-  const existing = await prisma.journalEntry.findUnique({
-    where: { entryNumber: data.entryNumber },
+  const existing = await prisma.journalEntry.findFirst({
+    where: {
+      entryNumber: data.entryNumber,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
   });
   if (existing) throw new AccountingError("Entry number already exists", 409);
 
@@ -188,6 +208,7 @@ async function createJournalEntry(data: {
       totalCredit: new Prisma.Decimal(totalCredit),
       createdBy: data.createdBy,
       status: "draft",
+      organizationId: data.organizationId ?? undefined,
       lines: {
         create: data.lines.map((line) => ({
           accountId: line.accountId,
@@ -210,9 +231,9 @@ async function createJournalEntry(data: {
   return entry;
 }
 
-async function postJournalEntry(id: string, approvedBy: string) {
-  const entry = await prisma.journalEntry.findUnique({
-    where: { id },
+async function postJournalEntry(id: string, approvedBy: string, organizationId?: string) {
+  const entry = await prisma.journalEntry.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: { lines: true },
   });
 
@@ -253,9 +274,9 @@ async function postJournalEntry(id: string, approvedBy: string) {
   return updated;
 }
 
-async function voidJournalEntry(id: string) {
-  const entry = await prisma.journalEntry.findUnique({
-    where: { id },
+async function voidJournalEntry(id: string, organizationId?: string) {
+  const entry = await prisma.journalEntry.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: { lines: true },
   });
 
@@ -291,6 +312,23 @@ async function voidJournalEntry(id: string) {
 
 // ─── INVOICES ──────────────────────────────────────────────
 
+// Schema is locked, so budget-category linkage lives as a prefix in Invoice.notes.
+// Format: "[budget:<uuid>]\n<user notes>" — stripped before returning to clients.
+const BUDGET_TAG = /^\[budget:([0-9a-f-]{36})\]\s*\n?/i;
+
+function encodeBudgetIntoNotes(budgetCategoryId: string | undefined, notes: string | undefined): string | undefined {
+  const clean = notes?.trim() ?? "";
+  if (!budgetCategoryId) return clean || undefined;
+  return `[budget:${budgetCategoryId}]\n${clean}`;
+}
+
+function decodeBudgetFromNotes(notes: string | null | undefined): { budgetCategoryId: string | null; notes: string } {
+  if (!notes) return { budgetCategoryId: null, notes: "" };
+  const match = notes.match(BUDGET_TAG);
+  if (!match) return { budgetCategoryId: null, notes };
+  return { budgetCategoryId: match[1], notes: notes.replace(BUDGET_TAG, "") };
+}
+
 async function getInvoices(filters: {
   page: number;
   limit: number;
@@ -300,10 +338,12 @@ async function getInvoices(filters: {
   search?: string;
   startDate?: string;
   endDate?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.InvoiceWhereInput = {};
   if (filters.type) where.type = filters.type;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
   if (filters.search) {
     where.OR = [
       { invoiceNumber: { contains: filters.search, mode: "insensitive" } },
@@ -331,17 +371,25 @@ async function getInvoices(filters: {
     prisma.invoice.count({ where }),
   ]);
 
-  return { invoices, total };
+  const decorated = invoices.map((inv) => {
+    const { budgetCategoryId, notes } = decodeBudgetFromNotes(inv.notes);
+    return { ...inv, budgetCategoryId, notes };
+  });
+
+  return { invoices: decorated, total };
 }
 
-async function getInvoiceById(id: string) {
-  return prisma.invoice.findUnique({
-    where: { id },
+async function getInvoiceById(id: string, organizationId?: string) {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       lineItems: true,
       payments: { orderBy: { paymentDate: "desc" } },
     },
   });
+  if (!invoice) return null;
+  const { budgetCategoryId, notes } = decodeBudgetFromNotes(invoice.notes);
+  return { ...invoice, budgetCategoryId, notes };
 }
 
 async function createInvoice(data: {
@@ -353,6 +401,9 @@ async function createInvoice(data: {
   dueDate: string;
   notes?: string;
   createdBy?: string;
+  budgetCategoryId?: string;
+  status?: string;
+  organizationId?: string | null;
   lineItems: Array<{
     description: string;
     quantity: number;
@@ -360,8 +411,11 @@ async function createInvoice(data: {
     taxRate?: number;
   }>;
 }) {
-  const existing = await prisma.invoice.findUnique({
-    where: { invoiceNumber: data.invoiceNumber },
+  const existing = await prisma.invoice.findFirst({
+    where: {
+      invoiceNumber: data.invoiceNumber,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
   });
   if (existing) throw new AccountingError("Invoice number already exists", 409);
 
@@ -387,6 +441,10 @@ async function createInvoice(data: {
   );
   const totalAmount = subtotal + taxAmount;
 
+  if (!data.budgetCategoryId) {
+    throw new AccountingError("A budget category is required for every invoice", 400);
+  }
+
   const invoice = await prisma.invoice.create({
     data: {
       invoiceNumber: data.invoiceNumber.trim(),
@@ -398,19 +456,23 @@ async function createInvoice(data: {
       subtotal: new Prisma.Decimal(subtotal),
       taxAmount: new Prisma.Decimal(taxAmount),
       totalAmount: new Prisma.Decimal(totalAmount),
-      notes: data.notes?.trim(),
+      notes: encodeBudgetIntoNotes(data.budgetCategoryId, data.notes),
       createdBy: data.createdBy,
+      ...(data.status && ["draft", "sent"].includes(data.status) ? { status: data.status } : {}),
+      organizationId: data.organizationId ?? undefined,
       lineItems: { create: lineItems },
     },
     include: { lineItems: true },
   });
 
-  logger.info(`Invoice created: ${invoice.invoiceNumber}`);
+  logger.info(`Invoice created: ${invoice.invoiceNumber} (budget ${data.budgetCategoryId})`);
   return invoice;
 }
 
-async function updateInvoiceStatus(id: string, status: string) {
-  const invoice = await prisma.invoice.findUnique({ where: { id } });
+async function updateInvoiceStatus(id: string, status: string, organizationId?: string) {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!invoice) throw new AccountingError("Invoice not found", 404);
 
   return prisma.invoice.update({
@@ -420,24 +482,33 @@ async function updateInvoiceStatus(id: string, status: string) {
   });
 }
 
-async function getInvoiceSummary() {
+async function getInvoiceSummary(organizationId?: string) {
+  const baseWhere: Prisma.InvoiceWhereInput = organizationId ? { organizationId } : {};
+  const paymentWhere: Prisma.PaymentWhereInput = organizationId
+    ? { invoice: { organizationId } }
+    : {};
+
   const [totalInvoices, statusBreakdown, overdue, recentPayments] = await Promise.all([
     prisma.invoice.aggregate({
+      where: baseWhere,
       _sum: { totalAmount: true, paidAmount: true },
       _count: true,
     }),
     prisma.invoice.groupBy({
       by: ["status"],
+      where: baseWhere,
       _count: true,
       _sum: { totalAmount: true },
     }),
     prisma.invoice.count({
       where: {
+        ...baseWhere,
         status: { in: ["sent", "overdue"] },
         dueDate: { lt: new Date() },
       },
     }),
     prisma.payment.findMany({
+      where: paymentWhere,
       take: 10,
       orderBy: { paymentDate: "desc" },
       include: { invoice: { select: { invoiceNumber: true, clientName: true } } },
@@ -475,10 +546,12 @@ async function getPayments(filters: {
   status?: string;
   startDate?: string;
   endDate?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.PaymentWhereInput = {};
   if (filters.invoiceId) where.invoiceId = filters.invoiceId;
   if (filters.status) where.status = filters.status;
+  if (filters.organizationId) where.invoice = { organizationId: filters.organizationId };
   if (filters.startDate || filters.endDate) {
     where.paymentDate = {};
     if (filters.startDate) where.paymentDate.gte = new Date(filters.startDate);
@@ -508,14 +581,31 @@ async function recordPayment(data: {
   paymentMethod: string;
   reference?: string;
   notes?: string;
+  budgetCategoryId?: string;
+  organizationId?: string | null;
 }) {
+  if (!data.invoiceId) {
+    throw new AccountingError("Payments must be linked to an invoice", 400);
+  }
+
+  const invoice = await prisma.invoice.findFirst({
+    where: {
+      id: data.invoiceId,
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+    },
+  });
+  if (!invoice) throw new AccountingError("Invoice not found", 404);
+
+  const { budgetCategoryId: invoiceBudgetId } = decodeBudgetFromNotes(invoice.notes);
+  const budgetCategoryId = data.budgetCategoryId || invoiceBudgetId || undefined;
+
   const payment = await prisma.payment.create({
     data: {
       invoiceId: data.invoiceId,
       amount: new Prisma.Decimal(data.amount),
       paymentDate: new Date(data.paymentDate),
       paymentMethod: data.paymentMethod,
-      reference: data.reference?.trim(),
+      reference: data.reference?.trim() || invoice.invoiceNumber,
       notes: data.notes?.trim(),
     },
     include: {
@@ -523,25 +613,100 @@ async function recordPayment(data: {
     },
   });
 
-  // Update invoice paid amount if linked
-  if (data.invoiceId) {
-    const invoice = await prisma.invoice.findUnique({ where: { id: data.invoiceId } });
-    if (invoice) {
-      const newPaid = invoice.paidAmount.add(new Prisma.Decimal(data.amount));
-      const isPaid = newPaid.gte(invoice.totalAmount);
+  const currentPaid = new Prisma.Decimal(invoice.paidAmount.toString());
+  const totalAmount = new Prisma.Decimal(invoice.totalAmount.toString());
+  const newPaid = currentPaid.add(new Prisma.Decimal(data.amount));
+  const isPaid = newPaid.gte(totalAmount);
 
-      await prisma.invoice.update({
-        where: { id: data.invoiceId },
-        data: {
-          paidAmount: newPaid,
-          status: isPaid ? "paid" : "partially_paid",
+  await prisma.invoice.update({
+    where: { id: data.invoiceId },
+    data: {
+      paidAmount: newPaid,
+      status: isPaid ? "paid" : "partially_paid",
+    },
+  });
+
+  // ── Finance linkage: every payment creates a ledger Transaction ──
+  const txType = invoice.type === "sales" ? "income" : "expense";
+  try {
+    await prisma.transaction.create({
+      data: {
+        type: txType,
+        category: invoice.type === "sales" ? "Sales Revenue" : "Vendor Payment",
+        amount: new Prisma.Decimal(data.amount),
+        transactionDate: new Date(data.paymentDate),
+        description: `${invoice.type === "sales" ? "Payment received for" : "Payment made for"} ${invoice.invoiceNumber} — ${invoice.clientName}`,
+        reference: invoice.invoiceNumber,
+        status: "completed",
+        ...(data.organizationId ? { organizationId: data.organizationId } : {}),
+      },
+    });
+  } catch (err) {
+    logger.warn(`Transaction ledger entry skipped for payment ${payment.id}: ${err}`);
+  }
+
+  // ── Finance linkage: deduct from budget (only for spend) ──
+  if (txType === "expense") {
+    await deductFromBudget(data.amount, budgetCategoryId, data.organizationId ?? undefined);
+  }
+
+  logger.info(`Payment recorded: ${data.amount} via ${data.paymentMethod} for ${invoice.invoiceNumber}`);
+  return payment;
+}
+
+/**
+ * Deduct a payment amount from the matching finance budget.
+ * Scoped to organization when provided.
+ */
+async function deductFromBudget(
+  amount: number,
+  budgetCategoryId?: string,
+  organizationId?: string
+) {
+  const year = new Date().getFullYear();
+
+  try {
+    let budget;
+
+    if (budgetCategoryId) {
+      budget = await prisma.annualBudget.findFirst({
+        where: {
+          categoryId: budgetCategoryId,
+          fiscalYear: year,
+          ...(organizationId ? { organizationId } : {}),
         },
       });
     }
-  }
 
-  logger.info(`Payment recorded: ${data.amount} via ${data.paymentMethod}`);
-  return payment;
+    if (!budget) {
+      budget = await prisma.annualBudget.findFirst({
+        where: {
+          fiscalYear: year,
+          status: "active",
+          category: { type: "expense" },
+          remainingAmount: { gt: 0 },
+          ...(organizationId ? { organizationId } : {}),
+        },
+        orderBy: { remainingAmount: "desc" },
+      });
+    }
+
+    if (budget) {
+      const decimalAmount = new Prisma.Decimal(amount);
+      const currentSpent = new Prisma.Decimal(budget.spentAmount.toString());
+      const currentRemaining = new Prisma.Decimal(budget.remainingAmount.toString());
+      await prisma.annualBudget.update({
+        where: { id: budget.id },
+        data: {
+          spentAmount: currentSpent.add(decimalAmount),
+          remainingAmount: currentRemaining.minus(decimalAmount),
+        },
+      });
+      logger.info(`Budget deducted: $${amount} from budget ${budget.id} (FY ${year})`);
+    }
+  } catch (err) {
+    logger.warn(`Budget deduction skipped: ${err}`);
+  }
 }
 
 // ─── TAX RECORDS ───────────────────────────────────────────
@@ -553,11 +718,13 @@ async function getTaxRecords(filters: {
   taxType?: string;
   status?: string;
   period?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.TaxRecordWhereInput = {};
   if (filters.taxType) where.taxType = filters.taxType;
   if (filters.status) where.status = filters.status;
   if (filters.period) where.period = filters.period;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
 
   const [records, total] = await Promise.all([
     prisma.taxRecord.findMany({
@@ -580,6 +747,7 @@ async function createTaxRecord(data: {
   dueDate: string;
   filingDate?: string;
   notes?: string;
+  organizationId?: string | null;
 }) {
   const record = await prisma.taxRecord.create({
     data: {
@@ -590,6 +758,7 @@ async function createTaxRecord(data: {
       dueDate: new Date(data.dueDate),
       filingDate: data.filingDate ? new Date(data.filingDate) : undefined,
       notes: data.notes?.trim(),
+      ...(data.organizationId ? { organizationId: data.organizationId } : {}),
     },
   });
 
@@ -599,8 +768,16 @@ async function createTaxRecord(data: {
 
 async function updateTaxRecord(
   id: string,
-  data: { status?: string; filingDate?: string; notes?: string }
+  data: { status?: string; filingDate?: string; notes?: string },
+  organizationId?: string
 ) {
+  if (organizationId) {
+    const owned = await prisma.taxRecord.findFirst({
+      where: { id, organizationId },
+      select: { id: true },
+    });
+    if (!owned) throw new AccountingError("Tax record not found", 404);
+  }
   return prisma.taxRecord.update({
     where: { id },
     data: {
@@ -613,9 +790,12 @@ async function updateTaxRecord(
 
 // ─── TRIAL BALANCE ─────────────────────────────────────────
 
-async function getTrialBalance() {
+async function getTrialBalance(organizationId?: string) {
   const accounts = await prisma.chartOfAccount.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      ...(organizationId ? { organizationId } : {}),
+    },
     orderBy: { accountCode: "asc" },
   });
 

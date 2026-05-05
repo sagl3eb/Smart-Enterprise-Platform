@@ -32,24 +32,57 @@ interface AuthState {
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setAuth: (user: AuthUser, tokens: AuthTokens) => void;
+  setAuth: (user: AuthUser, tokens: AuthTokens, remember?: boolean) => void;
   setUser: (user: AuthUser) => void;
   setTokens: (tokens: AuthTokens) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   hasModuleAccess: (moduleName: string) => boolean;
+  isSuperAdmin: () => boolean;
+  canWriteModule: () => boolean;
+}
+
+// Persistence helpers — `remember = true` writes to localStorage (survives a
+// browser restart); otherwise sessionStorage (cleared on tab close).
+const TOKENS_KEY = "sep-tokens";
+const USER_KEY = "sep-user";
+const REMEMBER_KEY = "sep-remember";
+
+function readStorage(key: string): string | null {
+  return localStorage.getItem(key) || sessionStorage.getItem(key);
+}
+
+function writeStorage(key: string, value: string, remember: boolean) {
+  if (remember) {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+  } else {
+    sessionStorage.setItem(key, value);
+    localStorage.removeItem(key);
+  }
+}
+
+function clearStorage() {
+  for (const key of [TOKENS_KEY, USER_KEY, REMEMBER_KEY]) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
+}
+
+function rememberFlag(): boolean {
+  return readStorage(REMEMBER_KEY) === "true";
 }
 
 const getStoredTokens = (): AuthTokens | null => {
   try {
-    const stored = localStorage.getItem("sep-tokens");
+    const stored = readStorage(TOKENS_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch { return null; }
 };
 
 const getStoredUser = (): AuthUser | null => {
   try {
-    const stored = localStorage.getItem("sep-user");
+    const stored = readStorage(USER_KEY);
     return stored ? JSON.parse(stored) : null;
   } catch { return null; }
 };
@@ -63,25 +96,25 @@ const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: !!storedTokens && !!storedUser,
   isLoading: false,
 
-  setAuth: (user, tokens) => {
-    localStorage.setItem("sep-tokens", JSON.stringify(tokens));
-    localStorage.setItem("sep-user", JSON.stringify(user));
+  setAuth: (user, tokens, remember = true) => {
+    writeStorage(TOKENS_KEY, JSON.stringify(tokens), remember);
+    writeStorage(USER_KEY, JSON.stringify(user), remember);
+    writeStorage(REMEMBER_KEY, String(remember), remember);
     set({ user, tokens, isAuthenticated: true });
   },
 
   setUser: (user) => {
-    localStorage.setItem("sep-user", JSON.stringify(user));
+    writeStorage(USER_KEY, JSON.stringify(user), rememberFlag());
     set({ user });
   },
 
   setTokens: (tokens) => {
-    localStorage.setItem("sep-tokens", JSON.stringify(tokens));
+    writeStorage(TOKENS_KEY, JSON.stringify(tokens), rememberFlag());
     set({ tokens });
   },
 
   logout: () => {
-    localStorage.removeItem("sep-tokens");
-    localStorage.removeItem("sep-user");
+    clearStorage();
     set({ user: null, tokens: null, isAuthenticated: false });
   },
 
@@ -92,6 +125,15 @@ const useAuthStore = create<AuthState>((set, get) => ({
     if (!user) return false;
     if (user.role.name === "admin" || user.role.name === "super_admin") return true;
     return user.moduleAccess.includes(moduleName);
+  },
+
+  isSuperAdmin: () => get().user?.role.name === "super_admin",
+
+  // Super admin is view-only on module data. Viewers can never write.
+  // Everyone else writes as usual (backend gates per-role still apply).
+  canWriteModule: () => {
+    const role = get().user?.role.name;
+    return role !== "super_admin" && role !== "viewer";
   },
 }));
 

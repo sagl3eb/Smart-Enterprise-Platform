@@ -1,14 +1,63 @@
 import prisma from "../prisma/client";
 import { Prisma } from "@prisma/client";
+import bcrypt from "bcrypt";
 import logger from "../utils/logger";
+
+const NEW_USER_DEFAULT_PASSWORD = "employee123";
+const NEW_USER_BASIC_MODULES = ["dashboard", "hr", "alerts"];
+
+async function provisionUserForEmployee(emp: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  position: string;
+  organizationId?: string | null;
+}): Promise<string | undefined> {
+  const existing = await prisma.user.findUnique({ where: { email: emp.email } });
+  if (existing) return existing.id;
+
+  const employeeRole = await prisma.role.findUnique({ where: { name: "employee" } });
+  if (!employeeRole) return undefined;
+
+  const isManagerRole = /manager|director|lead|head|chief/i.test(emp.position);
+  const managerRole = isManagerRole ? await prisma.role.findUnique({ where: { name: "manager" } }) : null;
+  const roleId = managerRole?.id || employeeRole.id;
+
+  const passwordHash = await bcrypt.hash(NEW_USER_DEFAULT_PASSWORD, 12);
+
+  const user = await prisma.user.create({
+    data: {
+      email: emp.email,
+      passwordHash,
+      firstName: emp.firstName,
+      lastName: emp.lastName,
+      roleId,
+      organizationId: emp.organizationId ?? undefined,
+      isActive: true,
+    },
+  });
+
+  for (const moduleName of NEW_USER_BASIC_MODULES) {
+    await prisma.userModuleAccess.create({
+      data: { userId: user.id, moduleName, hasAccess: true },
+    });
+  }
+
+  return user.id;
+}
 
 // ─── DEPARTMENTS ───────────────────────────────────────────
 
 async function getDepartments(filters: {
   isActive?: boolean;
   search?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.DepartmentWhereInput = {};
+
+  if (filters.organizationId) {
+    where.organizationId = filters.organizationId;
+  }
 
   if (filters.isActive !== undefined) {
     where.isActive = filters.isActive;
@@ -34,9 +83,9 @@ async function getDepartments(filters: {
   return departments;
 }
 
-async function getDepartmentById(id: string) {
-  const department = await prisma.department.findUnique({
-    where: { id },
+async function getDepartmentById(id: string, organizationId?: string) {
+  const department = await prisma.department.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       parent: { select: { id: true, name: true } },
       children: { select: { id: true, name: true, code: true } },
@@ -65,6 +114,7 @@ async function createDepartment(data: {
   description?: string;
   managerId?: string;
   parentId?: string;
+  organizationId?: string | null;
 }) {
   const department = await prisma.department.create({
     data: {
@@ -73,6 +123,7 @@ async function createDepartment(data: {
       description: data.description?.trim(),
       managerId: data.managerId,
       parentId: data.parentId,
+      organizationId: data.organizationId ?? undefined,
     },
     include: {
       parent: { select: { id: true, name: true } },
@@ -93,8 +144,13 @@ async function updateDepartment(
     managerId?: string;
     parentId?: string;
     isActive?: boolean;
-  }
+  },
+  organizationId?: string
 ) {
+  if (organizationId) {
+    const owned = await prisma.department.findFirst({ where: { id, organizationId }, select: { id: true } });
+    if (!owned) throw new HrError("Department not found", 404);
+  }
   const department = await prisma.department.update({
     where: { id },
     data: {
@@ -114,7 +170,11 @@ async function updateDepartment(
   return department;
 }
 
-async function deleteDepartment(id: string) {
+async function deleteDepartment(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.department.findFirst({ where: { id, organizationId }, select: { id: true } });
+    if (!owned) throw new HrError("Department not found", 404);
+  }
   const employeeCount = await prisma.employee.count({
     where: { departmentId: id },
   });
@@ -142,8 +202,13 @@ async function getEmployees(filters: {
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  organizationId?: string;
 }) {
   const where: Prisma.EmployeeWhereInput = {};
+
+  if (filters.organizationId) {
+    where.organizationId = filters.organizationId;
+  }
 
   if (filters.departmentId) {
     where.departmentId = filters.departmentId;
@@ -188,9 +253,9 @@ async function getEmployees(filters: {
   return { employees, total };
 }
 
-async function getEmployeeById(id: string) {
-  const employee = await prisma.employee.findUnique({
-    where: { id },
+async function getEmployeeById(id: string, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
     include: {
       department: { select: { id: true, name: true, code: true } },
       manager: {
@@ -207,8 +272,22 @@ async function getEmployeeById(id: string) {
   return employee;
 }
 
+async function nextEmployeeCode(organizationId?: string | null) {
+  const prefix = "EMP-";
+  const last = await prisma.employee.findFirst({
+    where: {
+      employeeCode: { startsWith: prefix },
+      ...(organizationId ? { organizationId } : {}),
+    },
+    orderBy: { employeeCode: "desc" },
+    select: { employeeCode: true },
+  });
+  const lastSeq = last ? Number(last.employeeCode.slice(prefix.length)) || 0 : 0;
+  return `${prefix}${String(lastSeq + 1).padStart(4, "0")}`;
+}
+
 async function createEmployee(data: {
-  employeeCode: string;
+  employeeCode?: string;
   departmentId: string;
   firstName: string;
   lastName: string;
@@ -223,35 +302,49 @@ async function createEmployee(data: {
   address?: string;
   emergencyContact?: string;
   userId?: string;
+  organizationId?: string | null;
 }) {
-  const existingCode = await prisma.employee.findUnique({
-    where: { employeeCode: data.employeeCode },
+  const employeeCode = data.employeeCode?.trim()
+    ? data.employeeCode.toUpperCase().trim()
+    : await nextEmployeeCode(data.organizationId);
+
+  const existingCode = await prisma.employee.findFirst({
+    where: { employeeCode, ...(data.organizationId ? { organizationId: data.organizationId } : {}) },
   });
   if (existingCode) {
     throw new HrError("Employee code already exists", 409);
   }
 
-  const existingEmail = await prisma.employee.findUnique({
-    where: { email: data.email },
+  const existingEmail = await prisma.employee.findFirst({
+    where: { email: data.email, ...(data.organizationId ? { organizationId: data.organizationId } : {}) },
   });
   if (existingEmail) {
     throw new HrError("Employee email already exists", 409);
   }
 
-  const department = await prisma.department.findUnique({
-    where: { id: data.departmentId },
+  const department = await prisma.department.findFirst({
+    where: { id: data.departmentId, ...(data.organizationId ? { organizationId: data.organizationId } : {}) },
   });
   if (!department) {
     throw new HrError("Department not found", 404);
   }
 
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const linkedUserId = data.userId ?? await provisionUserForEmployee({
+    email: normalizedEmail,
+    firstName: data.firstName.trim(),
+    lastName: data.lastName.trim(),
+    position: data.position.trim(),
+    organizationId: data.organizationId,
+  });
+
   const employee = await prisma.employee.create({
     data: {
-      employeeCode: data.employeeCode.toUpperCase().trim(),
+      employeeCode,
       departmentId: data.departmentId,
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim(),
-      email: data.email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone: data.phone?.trim(),
       position: data.position.trim(),
       hireDate: new Date(data.hireDate),
@@ -261,7 +354,8 @@ async function createEmployee(data: {
       dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
       address: data.address?.trim(),
       emergencyContact: data.emergencyContact?.trim(),
-      userId: data.userId,
+      userId: linkedUserId,
+      organizationId: data.organizationId ?? undefined,
     },
     include: {
       department: { select: { id: true, name: true, code: true } },
@@ -288,16 +382,19 @@ async function updateEmployee(
     managerId?: string;
     address?: string;
     emergencyContact?: string;
-  }
+  },
+  organizationId?: string
 ) {
-  const existing = await prisma.employee.findUnique({ where: { id } });
+  const existing = await prisma.employee.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
   if (!existing) {
     throw new HrError("Employee not found", 404);
   }
 
   if (data.email && data.email !== existing.email) {
-    const emailTaken = await prisma.employee.findUnique({
-      where: { email: data.email },
+    const emailTaken = await prisma.employee.findFirst({
+      where: { email: data.email, ...(existing.organizationId ? { organizationId: existing.organizationId } : {}) },
     });
     if (emailTaken) {
       throw new HrError("Email already in use by another employee", 409);
@@ -329,18 +426,29 @@ async function updateEmployee(
   return employee;
 }
 
-async function deleteEmployee(id: string) {
-  const employee = await prisma.employee.findUnique({ where: { id } });
+async function deleteEmployee(id: string, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+    select: { id: true, employeeCode: true, userId: true },
+  });
   if (!employee) {
     throw new HrError("Employee not found", 404);
   }
 
-  await prisma.employee.update({
-    where: { id },
-    data: { status: "terminated" },
-  });
+  await prisma.$transaction([
+    prisma.employeeAttendance.deleteMany({ where: { employeeId: id } }),
+    prisma.leaveRequest.deleteMany({ where: { employeeId: id } }),
+    prisma.performanceReview.deleteMany({ where: { employeeId: id } }),
+    prisma.employeeTraining.deleteMany({ where: { employeeId: id } }),
+    prisma.employeeDocument.deleteMany({ where: { employeeId: id } }),
+  ]);
+  await prisma.employee.updateMany({ where: { managerId: id }, data: { managerId: null } });
+  await prisma.employee.delete({ where: { id } });
+  if (employee.userId) {
+    await prisma.user.delete({ where: { id: employee.userId } }).catch(() => undefined);
+  }
 
-  logger.info(`Employee terminated: ${employee.employeeCode}`);
+  logger.info(`Employee deleted: ${employee.employeeCode}`);
 }
 
 // ─── ATTENDANCE ────────────────────────────────────────────
@@ -354,6 +462,7 @@ async function getAttendance(filters: {
   startDate?: string;
   endDate?: string;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.EmployeeAttendanceWhereInput = {};
 
@@ -361,8 +470,11 @@ async function getAttendance(filters: {
     where.employeeId = filters.employeeId;
   }
 
-  if (filters.departmentId) {
-    where.employee = { departmentId: filters.departmentId };
+  if (filters.departmentId || filters.organizationId) {
+    where.employee = {
+      ...(filters.departmentId ? { departmentId: filters.departmentId } : {}),
+      ...(filters.organizationId ? { organizationId: filters.organizationId } : {}),
+    };
   }
 
   if (filters.status) {
@@ -412,9 +524,9 @@ async function recordAttendance(data: {
   hoursWorked?: number;
   overtime?: number;
   notes?: string;
-}) {
-  const employee = await prisma.employee.findUnique({
-    where: { id: data.employeeId },
+}, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: data.employeeId, ...(organizationId ? { organizationId } : {}) },
   });
   if (!employee) {
     throw new HrError("Employee not found", 404);
@@ -489,11 +601,12 @@ async function bulkRecordAttendance(
     status?: string;
     hoursWorked?: number;
     overtime?: number;
-  }>
+  }>,
+  organizationId?: string
 ) {
   const results = [];
   for (const record of records) {
-    const result = await recordAttendance(record);
+    const result = await recordAttendance(record, organizationId);
     results.push(result);
   }
   return results;
@@ -547,6 +660,7 @@ async function getLeaveRequests(filters: {
   status?: string;
   leaveTypeId?: string;
   departmentId?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.LeaveRequestWhereInput = {};
 
@@ -562,8 +676,11 @@ async function getLeaveRequests(filters: {
     where.leaveTypeId = filters.leaveTypeId;
   }
 
-  if (filters.departmentId) {
-    where.employee = { departmentId: filters.departmentId };
+  if (filters.departmentId || filters.organizationId) {
+    where.employee = {
+      ...(filters.departmentId ? { departmentId: filters.departmentId } : {}),
+      ...(filters.organizationId ? { organizationId: filters.organizationId } : {}),
+    };
   }
 
   const [requests, total] = await Promise.all([
@@ -597,9 +714,9 @@ async function createLeaveRequest(data: {
   startDate: string;
   endDate: string;
   reason?: string;
-}) {
-  const employee = await prisma.employee.findUnique({
-    where: { id: data.employeeId },
+}, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: data.employeeId, ...(organizationId ? { organizationId } : {}) },
   });
   if (!employee) {
     throw new HrError("Employee not found", 404);
@@ -661,9 +778,16 @@ async function createLeaveRequest(data: {
 async function updateLeaveRequestStatus(
   id: string,
   status: "approved" | "rejected",
-  approvedBy: string
+  approvedBy: string,
+  decisionNote?: string,
+  organizationId?: string
 ) {
-  const request = await prisma.leaveRequest.findUnique({ where: { id } });
+  const request = await prisma.leaveRequest.findFirst({
+    where: {
+      id,
+      ...(organizationId ? { employee: { organizationId } } : {}),
+    },
+  });
 
   if (!request) {
     throw new HrError("Leave request not found", 404);
@@ -673,12 +797,18 @@ async function updateLeaveRequestStatus(
     throw new HrError(`Cannot ${status} a request that is already ${request.status}`, 400);
   }
 
+  const noteText = decisionNote?.trim();
+  const nextReason = noteText
+    ? `${request.reason ? `${request.reason}\n\n` : ""}[${status === "approved" ? "Approved" : "Rejected"}] ${noteText}`
+    : request.reason;
+
   const updated = await prisma.leaveRequest.update({
     where: { id },
     data: {
       status,
       approvedBy,
       approvedAt: new Date(),
+      reason: nextReason,
     },
     include: {
       employee: {
@@ -734,6 +864,7 @@ async function getPerformanceReviews(filters: {
   employeeId?: string;
   reviewPeriod?: string;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.PerformanceReviewWhereInput = {};
 
@@ -747,6 +878,10 @@ async function getPerformanceReviews(filters: {
 
   if (filters.status) {
     where.status = filters.status;
+  }
+
+  if (filters.organizationId) {
+    where.employee = { organizationId: filters.organizationId };
   }
 
   const [reviews, total] = await Promise.all([
@@ -784,9 +919,9 @@ async function createPerformanceReview(data: {
   improvements?: string;
   comments?: string;
   reviewDate: string;
-}) {
-  const employee = await prisma.employee.findUnique({
-    where: { id: data.employeeId },
+}, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: data.employeeId, ...(organizationId ? { organizationId } : {}) },
   });
   if (!employee) {
     throw new HrError("Employee not found", 404);
@@ -834,9 +969,12 @@ async function updatePerformanceReview(
     improvements?: string;
     comments?: string;
     status?: string;
-  }
+  },
+  organizationId?: string
 ) {
-  const existing = await prisma.performanceReview.findUnique({ where: { id } });
+  const existing = await prisma.performanceReview.findFirst({
+    where: { id, ...(organizationId ? { employee: { organizationId } } : {}) },
+  });
   if (!existing) {
     throw new HrError("Performance review not found", 404);
   }
@@ -875,11 +1013,16 @@ async function getTrainingPrograms(filters: {
   limit: number;
   skip: number;
   status?: string;
+  organizationId?: string;
 }) {
   const where: Prisma.TrainingProgramWhereInput = {};
 
   if (filters.status) {
     where.status = filters.status;
+  }
+
+  if (filters.organizationId) {
+    where.organizationId = filters.organizationId;
   }
 
   const [programs, total] = await Promise.all([
@@ -906,6 +1049,7 @@ async function createTrainingProgram(data: {
   endDate: string;
   maxParticipants?: number;
   cost?: number;
+  organizationId?: string | null;
 }) {
   const program = await prisma.trainingProgram.create({
     data: {
@@ -916,6 +1060,7 @@ async function createTrainingProgram(data: {
       endDate: new Date(data.endDate),
       maxParticipants: data.maxParticipants,
       cost: data.cost !== undefined ? new Prisma.Decimal(data.cost) : undefined,
+      organizationId: data.organizationId ?? undefined,
     },
     include: {
       _count: { select: { enrollments: true } },
@@ -926,14 +1071,24 @@ async function createTrainingProgram(data: {
   return program;
 }
 
-async function enrollInTraining(data: { employeeId: string; trainingProgramId: string }) {
-  const program = await prisma.trainingProgram.findUnique({
-    where: { id: data.trainingProgramId },
+async function enrollInTraining(data: { employeeId: string; trainingProgramId: string }, organizationId?: string) {
+  const program = await prisma.trainingProgram.findFirst({
+    where: { id: data.trainingProgramId, ...(organizationId ? { organizationId } : {}) },
     include: { _count: { select: { enrollments: true } } },
   });
 
   if (!program) {
     throw new HrError("Training program not found", 404);
+  }
+
+  if (organizationId) {
+    const employee = await prisma.employee.findFirst({
+      where: { id: data.employeeId, organizationId },
+      select: { id: true },
+    });
+    if (!employee) {
+      throw new HrError("Employee not found", 404);
+    }
   }
 
   if (program.maxParticipants && program._count.enrollments >= program.maxParticipants) {
@@ -969,9 +1124,12 @@ async function enrollInTraining(data: { employeeId: string; trainingProgramId: s
 
 // ─── EMPLOYEE DOCUMENTS ────────────────────────────────────
 
-async function getEmployeeDocuments(employeeId: string) {
+async function getEmployeeDocuments(employeeId: string, organizationId?: string) {
   return prisma.employeeDocument.findMany({
-    where: { employeeId },
+    where: {
+      employeeId,
+      ...(organizationId ? { employee: { organizationId } } : {}),
+    },
     orderBy: { uploadedAt: "desc" },
   });
 }
@@ -982,9 +1140,9 @@ async function addEmployeeDocument(data: {
   type: string;
   filePath: string;
   fileSize?: number;
-}) {
-  const employee = await prisma.employee.findUnique({
-    where: { id: data.employeeId },
+}, organizationId?: string) {
+  const employee = await prisma.employee.findFirst({
+    where: { id: data.employeeId, ...(organizationId ? { organizationId } : {}) },
   });
   if (!employee) {
     throw new HrError("Employee not found", 404);
@@ -1003,15 +1161,25 @@ async function addEmployeeDocument(data: {
   return doc;
 }
 
-async function deleteEmployeeDocument(id: string) {
+async function deleteEmployeeDocument(id: string, organizationId?: string) {
+  if (organizationId) {
+    const owned = await prisma.employeeDocument.findFirst({
+      where: { id, employee: { organizationId } },
+      select: { id: true },
+    });
+    if (!owned) throw new HrError("Document not found", 404);
+  }
   await prisma.employeeDocument.delete({ where: { id } });
 }
 
 // ─── ORG CHART ─────────────────────────────────────────────
 
-async function getOrgChart() {
+async function getOrgChart(organizationId?: string) {
   const employees = await prisma.employee.findMany({
-    where: { status: "active" },
+    where: {
+      status: "active",
+      ...(organizationId ? { organizationId } : {}),
+    },
     select: {
       id: true,
       firstName: true,
@@ -1029,7 +1197,9 @@ async function getOrgChart() {
 
 // ─── STATS ─────────────────────────────────────────────────
 
-async function getHrStats() {
+async function getHrStats(organizationId?: string) {
+  const orgFilter = organizationId ? { organizationId } : {};
+  const empOrgFilter = organizationId ? { employee: { organizationId } } : {};
   const [
     totalEmployees,
     activeEmployees,
@@ -1038,18 +1208,18 @@ async function getHrStats() {
     avgSalary,
     employmentTypeBreakdown,
   ] = await Promise.all([
-    prisma.employee.count(),
-    prisma.employee.count({ where: { status: "active" } }),
-    prisma.department.count({ where: { isActive: true } }),
-    prisma.leaveRequest.count({ where: { status: "pending" } }),
+    prisma.employee.count({ where: { ...orgFilter } }),
+    prisma.employee.count({ where: { status: "active", ...orgFilter } }),
+    prisma.department.count({ where: { isActive: true, ...orgFilter } }),
+    prisma.leaveRequest.count({ where: { status: "pending", ...empOrgFilter } }),
     prisma.employee.aggregate({
       _avg: { salary: true },
-      where: { status: "active" },
+      where: { status: "active", ...orgFilter },
     }),
     prisma.employee.groupBy({
       by: ["employmentType"],
       _count: true,
-      where: { status: "active" },
+      where: { status: "active", ...orgFilter },
     }),
   ]);
 
@@ -1075,6 +1245,86 @@ export class HrError extends Error {
     this.name = "HrError";
     this.statusCode = statusCode;
   }
+}
+
+// ─── JOB ROLES ─────────────────────────────────────────────
+
+async function getJobRoles(filters: { isActive?: boolean; search?: string; organizationId?: string } = {}) {
+  const where: Prisma.JobRoleWhereInput = {};
+  if (filters.isActive !== undefined) where.isActive = filters.isActive;
+  if (filters.organizationId) where.organizationId = filters.organizationId;
+  if (filters.search) {
+    where.OR = [
+      { name: { contains: filters.search, mode: "insensitive" } },
+      { description: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+  return prisma.jobRole.findMany({ where, orderBy: { name: "asc" } });
+}
+
+async function createJobRole(data: { name: string; description?: string; level?: string; organizationId?: string | null }) {
+  const name = data.name.trim();
+  if (!name) throw new HrError("Name is required", 400);
+  const existing = await prisma.jobRole.findFirst({
+    where: { name, ...(data.organizationId ? { organizationId: data.organizationId } : {}) },
+  });
+  if (existing) throw new HrError("Job role already exists", 409);
+  const role = await prisma.jobRole.create({
+    data: {
+      name,
+      description: data.description?.trim(),
+      level: data.level?.trim(),
+      organizationId: data.organizationId ?? undefined,
+    },
+  });
+  logger.info(`Job role created: ${role.name}`);
+  return role;
+}
+
+async function updateJobRole(id: string, data: { name?: string; description?: string; level?: string; isActive?: boolean }, organizationId?: string) {
+  const existing = await prisma.jobRole.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
+  if (!existing) throw new HrError("Job role not found", 404);
+
+  if (data.name && data.name.trim() !== existing.name) {
+    const dup = await prisma.jobRole.findFirst({
+      where: {
+        name: data.name.trim(),
+        ...(existing.organizationId ? { organizationId: existing.organizationId } : {}),
+      },
+    });
+    if (dup) throw new HrError("Job role name already in use", 409);
+  }
+
+  const updated = await prisma.jobRole.update({
+    where: { id },
+    data: {
+      name: data.name?.trim(),
+      description: data.description?.trim(),
+      level: data.level?.trim(),
+      isActive: data.isActive,
+    },
+  });
+  logger.info(`Job role updated: ${updated.name}`);
+  return updated;
+}
+
+async function deleteJobRole(id: string, organizationId?: string) {
+  const existing = await prisma.jobRole.findFirst({
+    where: { id, ...(organizationId ? { organizationId } : {}) },
+  });
+  if (!existing) throw new HrError("Job role not found", 404);
+
+  const inUse = await prisma.employee.count({ where: { position: existing.name } });
+  if (inUse > 0) {
+    await prisma.jobRole.update({ where: { id }, data: { isActive: false } });
+    logger.info(`Job role deactivated (in use): ${existing.name}`);
+    return { deactivated: true, usedBy: inUse };
+  }
+  await prisma.jobRole.delete({ where: { id } });
+  logger.info(`Job role deleted: ${existing.name}`);
+  return { deactivated: false, usedBy: 0 };
 }
 
 const hrService = {
@@ -1108,6 +1358,10 @@ const hrService = {
   deleteEmployeeDocument,
   getOrgChart,
   getHrStats,
+  getJobRoles,
+  createJobRole,
+  updateJobRole,
+  deleteJobRole,
 };
 
 export default hrService;

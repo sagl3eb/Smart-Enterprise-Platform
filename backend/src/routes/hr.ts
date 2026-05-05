@@ -1,60 +1,57 @@
 import { Router } from "express";
 import hrController from "../controllers/hr";
 import { authenticate } from "../middleware/auth";
-import { requireRole, requireMinRole } from "../middleware/rbac";
+import { attachScope } from "../middleware/callerScope";
+import { blockViewerWrites, blockSuperAdminModuleWrites } from "../middleware/rbac";
 
 const router = Router();
-
-// All HR routes require authentication
 router.use(authenticate);
+router.use(attachScope);
+router.use(blockViewerWrites);
+router.use(blockSuperAdminModuleWrites);
 
-// ─── Stats ─────────────────────────────────────────────────
 router.get("/stats", hrController.getHrStats);
-
-// ─── Org Chart ─────────────────────────────────────────────
 router.get("/org-chart", hrController.getOrgChart);
 
-// ─── Departments ───────────────────────────────────────────
 router.get("/departments", hrController.getDepartments);
 router.get("/departments/:id", hrController.getDepartmentById);
-router.post("/departments", requireMinRole("manager"), hrController.createDepartment);
-router.put("/departments/:id", requireMinRole("manager"), hrController.updateDepartment);
-router.delete("/departments/:id", requireRole("admin"), hrController.deleteDepartment);
+router.post("/departments", hrController.createDepartment);
+router.put("/departments/:id", hrController.updateDepartment);
+router.delete("/departments/:id", hrController.deleteDepartment);
 
-// ─── Employees ─────────────────────────────────────────────
 router.get("/employees", hrController.getEmployees);
 router.get("/employees/:id", hrController.getEmployeeById);
-router.post("/employees", requireMinRole("manager"), hrController.createEmployee);
-router.put("/employees/:id", requireMinRole("manager"), hrController.updateEmployee);
-router.delete("/employees/:id", requireRole("admin"), hrController.deleteEmployee);
+router.post("/employees", hrController.createEmployee);
+router.put("/employees/:id", hrController.updateEmployee);
+router.delete("/employees/:id", hrController.deleteEmployee);
 
-// ─── Employee Documents ────────────────────────────────────
 router.get("/employees/:employeeId/documents", hrController.getEmployeeDocuments);
-router.post("/employees/:employeeId/documents", requireMinRole("manager"), hrController.addEmployeeDocument);
-router.delete("/employees/:employeeId/documents/:docId", requireMinRole("manager"), hrController.deleteEmployeeDocument);
+router.post("/employees/:employeeId/documents", hrController.addEmployeeDocument);
+router.delete("/employees/:employeeId/documents/:docId", hrController.deleteEmployeeDocument);
 
-// ─── Attendance ────────────────────────────────────────────
 router.get("/attendance", hrController.getAttendance);
-router.post("/attendance", requireMinRole("manager"), hrController.recordAttendance);
-router.post("/attendance/bulk", requireMinRole("manager"), hrController.bulkRecordAttendance);
+router.post("/attendance", hrController.recordAttendance);
+router.post("/attendance/bulk", hrController.bulkRecordAttendance);
 router.get("/attendance/summary/:employeeId", hrController.getAttendanceSummary);
 
-// ─── Leave ─────────────────────────────────────────────────
 router.get("/leave-types", hrController.getLeaveTypes);
 router.get("/leave-requests", hrController.getLeaveRequests);
 router.post("/leave-requests", hrController.createLeaveRequest);
-router.put("/leave-requests/:id/approve", requireMinRole("manager"), hrController.approveLeaveRequest);
-router.put("/leave-requests/:id/reject", requireMinRole("manager"), hrController.rejectLeaveRequest);
+router.put("/leave-requests/:id/approve", hrController.approveLeaveRequest);
+router.put("/leave-requests/:id/reject", hrController.rejectLeaveRequest);
 router.get("/leave-balance/:employeeId", hrController.getLeaveBalance);
 
-// ─── Performance Reviews ───────────────────────────────────
 router.get("/performance-reviews", hrController.getPerformanceReviews);
-router.post("/performance-reviews", requireMinRole("manager"), hrController.createPerformanceReview);
-router.put("/performance-reviews/:id", requireMinRole("manager"), hrController.updatePerformanceReview);
+router.post("/performance-reviews", hrController.createPerformanceReview);
+router.put("/performance-reviews/:id", hrController.updatePerformanceReview);
 
-// ─── Training ──────────────────────────────────────────────
+router.get("/job-roles", hrController.getJobRoles);
+router.post("/job-roles", hrController.createJobRole);
+router.put("/job-roles/:id", hrController.updateJobRole);
+router.delete("/job-roles/:id", hrController.deleteJobRole);
+
 router.get("/training-programs", hrController.getTrainingPrograms);
-router.post("/training-programs", requireMinRole("manager"), hrController.createTrainingProgram);
-router.post("/training-enrollments", requireMinRole("manager"), hrController.enrollInTraining);
+router.post("/training-programs", hrController.createTrainingProgram);
+router.post("/training-enrollments", hrController.enrollInTraining);
 
 export default router;

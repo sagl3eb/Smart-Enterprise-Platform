@@ -9,7 +9,7 @@ import api from "../../api/client";
 import type { Invoice } from "../../types";
 
 const emptyLine = { description: "", quantity: "1", unitPrice: "", taxRate: "0" };
-const emptyForm = { invoiceNumber: "", type: "sales", clientName: "", clientEmail: "", issueDate: "", dueDate: "", notes: "" };
+const emptyForm = { invoiceNumber: "", type: "sales", clientName: "", clientEmail: "", issueDate: "", dueDate: "", notes: "", budgetCategoryId: "" };
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -21,7 +21,8 @@ export default function Invoices() {
   const [selected, setSelected] = useState<Invoice | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [lineItems, setLineItems] = useState([{ ...emptyLine }]);
-  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentDate: "", paymentMethod: "bank_transfer", reference: "" });
+  const [paymentForm, setPaymentForm] = useState({ amount: "", paymentDate: "", paymentMethod: "bank_transfer", reference: "", budgetCategoryId: "" });
+  const [budgetCategories, setBudgetCategories] = useState<Array<{ id: string; name: string; type: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -37,6 +38,17 @@ export default function Invoices() {
   }, [statusFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    api.get("/finance/budget-categories?limit=100")
+      .then((r) => setBudgetCategories(r.data.data || []))
+      .catch(() => { /* silent */ });
+  }, []);
+
+  // Categories available for the current invoice type (sales → income, purchase → expense)
+  const availableCategories = budgetCategories.filter((c) =>
+    form.type === "sales" ? c.type === "income" : c.type === "expense"
+  );
 
   const setField = (key: string, val: string) => setForm((prev) => ({ ...prev, [key]: val }));
 
@@ -61,9 +73,12 @@ export default function Invoices() {
   const subtotal = lineItems.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0), 0);
   const taxTotal = lineItems.reduce((s, l) => s + Number(l.quantity || 0) * Number(l.unitPrice || 0) * Number(l.taxRate || 0) / 100, 0);
 
-  const handleSave = async () => {
+  const handleSave = async (status: "draft" | "sent" = "sent") => {
     if (!form.invoiceNumber || !form.clientName || !form.issueDate || !form.dueDate || lineItems.length === 0) {
       setToast({ message: "Fill in all required fields and add at least one line item", type: "error" }); return;
+    }
+    if (!form.budgetCategoryId) {
+      setToast({ message: "Pick a budget category — every invoice must follow a budget", type: "error" }); return;
     }
     if (lineItems.some((l) => !l.description || !l.unitPrice)) {
       setToast({ message: "Each line item needs a description and price", type: "error" }); return;
@@ -72,9 +87,10 @@ export default function Invoices() {
     try {
       await api.post("/accounting/invoices", {
         ...form,
+        status,
         lineItems: lineItems.map((l) => ({ description: l.description, quantity: Number(l.quantity), unitPrice: Number(l.unitPrice), taxRate: Number(l.taxRate) })),
       });
-      setToast({ message: "Invoice created", type: "success" });
+      setToast({ message: status === "draft" ? "Invoice saved as draft" : "Invoice created", type: "success" });
       setShowForm(false); fetchData();
     } catch (err: unknown) {
       setToast({ message: (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "Failed to create", type: "error" });
@@ -95,8 +111,8 @@ export default function Invoices() {
     }
     setSaving(true);
     try {
-      await api.post("/accounting/payments", { invoiceId: selected.id, amount: Number(paymentForm.amount), paymentDate: paymentForm.paymentDate, paymentMethod: paymentForm.paymentMethod, reference: paymentForm.reference });
-      setToast({ message: "Payment recorded", type: "success" });
+      await api.post("/accounting/payments", { invoiceId: selected.id, amount: Number(paymentForm.amount), paymentDate: paymentForm.paymentDate, paymentMethod: paymentForm.paymentMethod, reference: paymentForm.reference, budgetCategoryId: paymentForm.budgetCategoryId || undefined });
+      setToast({ message: paymentForm.budgetCategoryId ? "Payment recorded & budget updated" : "Payment recorded", type: "success" });
       setShowPayment(false); setShowDetail(false); fetchData();
     } catch { setToast({ message: "Failed to record payment", type: "error" }); }
     finally { setSaving(false); }
@@ -108,7 +124,7 @@ export default function Invoices() {
   const statusDonut = Object.entries(invoices.reduce<Record<string, number>>((acc, inv) => { acc[inv.status] = (acc[inv.status] || 0) + 1; return acc; }, {})).map(([name, value]) => ({ name, value }));
 
   return (
-    <PageWrapper title="Invoices" subtitle="Accounting — Sales & Purchase invoices">
+    <PageWrapper title="Invoices" subtitle="Accounting - Sales & Purchase invoices">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -127,7 +143,7 @@ export default function Invoices() {
         <Button onClick={openCreate} className="ml-auto"><Plus size={16} /> New Invoice</Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         <div className="lg:col-span-3">
           {loading ? <LoadingSpinner /> : invoices.length === 0 ? <EmptyState title="No invoices" icon={<FileText size={32} />} /> : (
             <Card><CardBody className="overflow-x-auto p-0">
@@ -152,8 +168,13 @@ export default function Invoices() {
             </CardBody></Card>
           )}
         </div>
-        <Card><CardHeader><h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">By Status</h3></CardHeader>
-          <CardBody>{statusDonut.length > 0 ? <DonutChartWidget data={statusDonut} height={220} innerRadius={50} outerRadius={75} /> : <p className="text-xs text-[#9B93B8] text-center py-8">No data</p>}</CardBody>
+        <Card>
+          <CardHeader><h3 className="text-sm font-semibold text-[#1E1B2E] dark:text-[#EDE9FE]">By Status</h3></CardHeader>
+          <CardBody>
+            {statusDonut.length > 0
+              ? <DonutChartWidget data={statusDonut} height={260} innerRadius={55} outerRadius={90} />
+              : <p className="text-xs text-[#9B93B8] text-center py-8">No data</p>}
+          </CardBody>
         </Card>
       </div>
 
@@ -161,11 +182,24 @@ export default function Invoices() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Create Invoice" size="xl">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <FormInput label="Invoice #" value={form.invoiceNumber} onChange={(v) => setField("invoiceNumber", v)} required />
-          <FormSelect label="Type" value={form.type} onChange={(v) => setField("type", v)} options={[{ value: "sales", label: "Sales" }, { value: "purchase", label: "Purchase" }]} />
+          <FormSelect label="Type" value={form.type} onChange={(v) => { setField("type", v); setField("budgetCategoryId", ""); }} options={[{ value: "sales", label: "Sales" }, { value: "purchase", label: "Purchase" }]} />
           <FormInput label="Client Name" value={form.clientName} onChange={(v) => setField("clientName", v)} required />
           <FormInput label="Client Email" value={form.clientEmail} onChange={(v) => setField("clientEmail", v)} type="email" />
           <FormInput label="Issue Date" value={form.issueDate} onChange={(v) => setField("issueDate", v)} type="date" required />
           <FormInput label="Due Date" value={form.dueDate} onChange={(v) => setField("dueDate", v)} type="date" required />
+          <div className="sm:col-span-3">
+            <FormSelect
+              label={`Budget Category (${form.type === "sales" ? "income" : "expense"}) — required`}
+              value={form.budgetCategoryId}
+              onChange={(v) => setField("budgetCategoryId", v)}
+              required
+              options={[
+                { value: "", label: availableCategories.length === 0 ? `— no ${form.type === "sales" ? "income" : "expense"} categories defined —` : "— pick a category —" },
+                ...availableCategories.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+            />
+            <p className="text-[11px] text-[#9B93B8] mt-1">Every invoice is tied to a budget. Sales invoices track against an income budget; purchases deduct from an expense budget on payment.</p>
+          </div>
         </div>
         <h4 className="text-xs font-semibold text-[#4C4566] dark:text-[#B8AEDD] mb-3">Line Items</h4>
         {lineItems.map((line, i) => (
@@ -186,7 +220,8 @@ export default function Invoices() {
         <FormTextarea label="Notes" value={form.notes} onChange={(v) => setField("notes", v)} />
         <div className="flex justify-end gap-3 mt-4">
           <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-          <Button onClick={handleSave} loading={saving}>Create Invoice</Button>
+          <Button variant="secondary" onClick={() => handleSave("draft")} loading={saving}>Save as Draft</Button>
+          <Button onClick={() => handleSave("sent")} loading={saving}>Create &amp; Send</Button>
         </div>
       </Modal>
 
@@ -230,7 +265,7 @@ export default function Invoices() {
             <div className="flex gap-2 pt-4 border-t border-[#E8E4F3] dark:border-[#2E2850]">
               {selected.status === "draft" && <Button variant="secondary" onClick={() => updateStatus(selected.id, "sent")}>Mark as Sent</Button>}
               {selected.status !== "paid" && selected.status !== "cancelled" && (
-                <Button onClick={() => { setPaymentForm({ amount: String(selected.totalAmount - selected.paidAmount), paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: "bank_transfer", reference: "" }); setShowPayment(true); }}>
+                <Button onClick={() => { setPaymentForm({ amount: String(selected.totalAmount - selected.paidAmount), paymentDate: new Date().toISOString().slice(0, 10), paymentMethod: "bank_transfer", reference: "", budgetCategoryId: selected.budgetCategoryId || "" }); setShowPayment(true); }}>
                   <CreditCard size={14} /> Record Payment
                 </Button>
               )}
@@ -250,6 +285,13 @@ export default function Invoices() {
             { value: "cash", label: "Cash" }, { value: "check", label: "Check" }, { value: "online", label: "Online" },
           ]} />
           <FormInput label="Reference" value={paymentForm.reference} onChange={(v) => setPaymentForm((p) => ({ ...p, reference: v }))} />
+          <FormSelect
+            label="Budget Category (deducts from Finance)"
+            value={paymentForm.budgetCategoryId}
+            onChange={(v) => setPaymentForm((p) => ({ ...p, budgetCategoryId: v }))}
+            options={[{ value: "", label: "— none (no budget deduction) —" }, ...budgetCategories.map((c) => ({ value: c.id, label: c.name }))]}
+          />
+          <p className="text-[11px] text-[#4C4566] dark:text-[#B8AEDD]">Selecting a category will record this payment as spent against that Finance budget.</p>
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <Button variant="ghost" onClick={() => setShowPayment(false)}>Cancel</Button>

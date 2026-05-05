@@ -39,23 +39,10 @@ export default function AttritionDashboard() {
       setSummary(res.data.data);
     } catch {
       setSummary({
-        totalEmployees: 48, totalPredictions: 48, highRisk: 7, mediumRisk: 15, lowRisk: 26,
-        avgRiskScore: 0.3542,
-        departmentBreakdown: [
-          { department: "Engineering", high: 2, medium: 4, low: 8, avgRiskScore: 0.32, total: 14 },
-          { department: "Sales", high: 3, medium: 3, low: 4, avgRiskScore: 0.45, total: 10 },
-          { department: "Marketing", high: 1, medium: 3, low: 4, avgRiskScore: 0.34, total: 8 },
-          { department: "HR", high: 0, medium: 2, low: 3, avgRiskScore: 0.25, total: 5 },
-          { department: "Finance", high: 1, medium: 2, low: 3, avgRiskScore: 0.33, total: 6 },
-          { department: "Operations", high: 0, medium: 1, low: 4, avgRiskScore: 0.22, total: 5 },
-        ],
-        topFactors: [
-          { factor: "satisfaction_score", totalImportance: 32.5 },
-          { factor: "overtime_hours_avg", totalImportance: 22.1 },
-          { factor: "days_since_last_promotion", totalImportance: 18.7 },
-          { factor: "salary", totalImportance: 12.3 },
-          { factor: "performance_score", totalImportance: 8.4 },
-        ],
+        totalEmployees: 0, totalPredictions: 0, highRisk: 0, mediumRisk: 0, lowRisk: 0,
+        avgRiskScore: 0,
+        departmentBreakdown: [],
+        topFactors: [],
       });
     } finally {
       setLoading(false);
@@ -94,9 +81,9 @@ export default function AttritionDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Employees" value={formatNumber(summary.totalEmployees)} icon={<Users size={20} />} />
-        <StatCard title="High Risk" value={formatNumber(summary.highRisk)} change={summary.highRisk > 5 ? 15 : -5} subtitle="employees" icon={<AlertTriangle size={20} />} />
+        <StatCard title="High Risk" value={formatNumber(summary.highRisk)} subtitle="employees" icon={<AlertTriangle size={20} />} />
         <StatCard title="Medium Risk" value={formatNumber(summary.mediumRisk)} icon={<ShieldAlert size={20} />} />
-        <StatCard title="Avg Risk Score" value={formatPercent(summary.avgRiskScore * 100)} change={-2.3} icon={<TrendingDown size={20} />} />
+        <StatCard title="Avg Risk Score" value={formatPercent(summary.avgRiskScore * 100)} icon={<TrendingDown size={20} />} />
       </div>
 
       {/* Charts */}

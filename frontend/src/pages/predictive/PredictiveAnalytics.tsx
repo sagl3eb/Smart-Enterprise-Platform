@@ -205,22 +205,25 @@ export default function PredictiveAnalytics() {
 
   const handleTrain = async () => {
     setIsTraining(true);
-    setTrainingProgress("Training models on dataset...");
+    setTrainingProgress("Training models on dataset (this can take 2-5 minutes on first run)...");
     setError(null);
+    const TRAIN_TIMEOUT = 600000; // 10 minutes — ML training on 56k+ rows can be slow
     try {
       let data;
       try {
-        const res = await api.post("/predictive/attrition/train");
+        const res = await api.post("/predictive/attrition/train", undefined, { timeout: TRAIN_TIMEOUT });
         data = res.data.data ?? res.data;
-      } catch {
-        const res = await mlApi.post("/predict/attrition/train");
+      } catch (backendErr: any) {
+        // Fall back to direct ML call if backend proxy is unavailable
+        const res = await mlApi.post("/predict/attrition/train", undefined, { timeout: TRAIN_TIMEOUT });
         data = res.data;
       }
       setTrainingProgress(`Training complete in ${data.training_time || ""}s!`);
       await loadComparison();
       await loadDepartmentRisks();
     } catch (err: any) {
-      setError(`Training failed: ${err.message}`);
+      const detail = err?.response?.data?.message || err?.response?.data?.detail || err?.message || "Network error";
+      setError(`Training failed: ${detail}. Make sure the ML service is running (http://localhost:8000/health).`);
       setTrainingProgress("");
     } finally {
       setIsTraining(false);
@@ -410,25 +413,30 @@ export default function PredictiveAnalytics() {
         </h3>
       </CardHeader>
       <CardBody>
-        <div className="grid grid-cols-3 gap-1 max-w-xs mx-auto text-center">
-          <div />
-          <div className="text-[10px] font-semibold text-[#9B93B8] p-2">Pred: Stayed</div>
-          <div className="text-[10px] font-semibold text-[#9B93B8] p-2">Pred: Left</div>
+        <div className="w-full flex items-center justify-center">
+          <div
+            className="grid gap-3 text-center"
+            style={{ gridTemplateColumns: "minmax(110px, auto) 1fr 1fr" }}
+          >
+            <div />
+            <div className="text-[11px] font-semibold text-[#9B93B8] py-2">Pred: Stayed</div>
+            <div className="text-[11px] font-semibold text-[#9B93B8] py-2">Pred: Left</div>
 
-          <div className="text-[10px] font-semibold text-[#9B93B8] p-2 flex items-center">Actual: Stayed</div>
-          <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-[10px] font-bold text-emerald-700 dark:text-emerald-400 font-serif">
-            {cm.true_negatives.toLocaleString()}
-          </div>
-          <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-[10px] font-bold text-red-700 dark:text-red-400 font-serif">
-            {cm.false_positives.toLocaleString()}
-          </div>
+            <div className="text-[11px] font-semibold text-[#9B93B8] py-2 flex items-center justify-end pr-2">Actual: Stayed</div>
+            <div className="bg-emerald-100 dark:bg-emerald-900/30 px-4 py-6 rounded-[12px] font-bold text-2xl text-emerald-700 dark:text-emerald-400 font-serif flex items-center justify-center min-h-[80px]">
+              {cm.true_negatives.toLocaleString()}
+            </div>
+            <div className="bg-red-100 dark:bg-red-900/30 px-4 py-6 rounded-[12px] font-bold text-2xl text-red-700 dark:text-red-400 font-serif flex items-center justify-center min-h-[80px]">
+              {cm.false_positives.toLocaleString()}
+            </div>
 
-          <div className="text-[10px] font-semibold text-[#9B93B8] p-2 flex items-center">Actual: Left</div>
-          <div className="bg-red-100 dark:bg-red-900/30 p-3 rounded-[10px] font-bold text-red-700 dark:text-red-400 font-serif">
-            {cm.false_negatives.toLocaleString()}
-          </div>
-          <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-[10px] font-bold text-emerald-700 dark:text-emerald-400 font-serif">
-            {cm.true_positives.toLocaleString()}
+            <div className="text-[11px] font-semibold text-[#9B93B8] py-2 flex items-center justify-end pr-2">Actual: Left</div>
+            <div className="bg-red-100 dark:bg-red-900/30 px-4 py-6 rounded-[12px] font-bold text-2xl text-red-700 dark:text-red-400 font-serif flex items-center justify-center min-h-[80px]">
+              {cm.false_negatives.toLocaleString()}
+            </div>
+            <div className="bg-emerald-100 dark:bg-emerald-900/30 px-4 py-6 rounded-[12px] font-bold text-2xl text-emerald-700 dark:text-emerald-400 font-serif flex items-center justify-center min-h-[80px]">
+              {cm.true_positives.toLocaleString()}
+            </div>
           </div>
         </div>
       </CardBody>
@@ -490,18 +498,35 @@ export default function PredictiveAnalytics() {
           <ResponsiveContainer width="100%" height={350}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E8E4F3" opacity={0.5} />
-              <XAxis dataKey="fpr" tick={AXIS_TICK} axisLine={false} tickLine={false} label={{ value: "False Positive Rate", position: "bottom", style: { fontSize: 11, fill: "#9B93B8" } }} />
-              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} label={{ value: "True Positive Rate", angle: -90, position: "left", style: { fontSize: 11, fill: "#9B93B8" } }} />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
+              <XAxis
+                dataKey="fpr"
+                type="number"
+                domain={[0, 1]}
+                tick={AXIS_TICK}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) => v.toFixed(2)}
+                label={{ value: "False Positive Rate", position: "bottom", style: { fontSize: 11, fill: "#9B93B8" } }}
+              />
+              <YAxis
+                type="number"
+                domain={[0, 1]}
+                tick={AXIS_TICK}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v: number) => v.toFixed(2)}
+                label={{ value: "True Positive Rate", angle: -90, position: "left", style: { fontSize: 11, fill: "#9B93B8" } }}
+              />
+              <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number | string) => (typeof v === "number" ? v.toFixed(3) : v)} labelFormatter={(v: number | string) => (typeof v === "number" ? `FPR: ${v.toFixed(3)}` : `FPR: ${v}`)} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
-              <Line type="monotone" dataKey="diagonal" stroke="#E8E4F3" strokeDasharray="5 5" name="Random (0.5)" dot={false} />
+              <Line type="monotone" dataKey="diagonal" stroke="#E8E4F3" strokeDasharray="5 5" name="Random (0.50)" dot={false} />
               {modelNames.map((name) => (
                 <Line
                   key={name}
                   type="monotone"
                   dataKey={name}
                   stroke={MODEL_COLORS[name]}
-                  name={`${MODEL_LABELS[name]} (AUC: ${comparison.models[name].roc_data.auc.toFixed(3)})`}
+                  name={`${MODEL_LABELS[name]} (AUC: ${comparison.models[name].roc_data.auc.toFixed(2)})`}
                   dot={false}
                   strokeWidth={2}
                 />
@@ -793,7 +818,7 @@ export default function PredictiveAnalytics() {
                               <td className="py-2.5">{h.features}</td>
                               <td className="py-2.5">{h.training_time_seconds}s</td>
                               <td className="py-2.5 font-semibold font-serif">
-                                {Math.max(...Object.values(h.results || {}).map((r: any) => r.accuracy || 0) as number[]).toFixed(4)}
+                                {((Math.max(...Object.values(h.results || {}).map((r: any) => r.accuracy || 0) as number[])) * 100).toFixed(1)}%
                               </td>
                             </tr>
                           ))}

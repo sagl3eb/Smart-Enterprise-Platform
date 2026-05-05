@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import PageWrapper from "../../components/layout/PageWrapper";
 import { Card, CardHeader, CardBody, StatCard, LoadingSpinner, Badge } from "../../components/ui/Card";
-import { Button, Toast } from "../../components/ui/Modal";
-import { BarChartWidget, DonutChartWidget } from "../../components/charts/Charts";
-import { DollarSign, TrendingUp, PieChart, AlertTriangle, FileBarChart, Plus } from "lucide-react";
+import { Toast } from "../../components/ui/Modal";
+import { DonutChartWidget } from "../../components/charts/Charts";
+import { DollarSign, TrendingUp, PieChart, AlertTriangle } from "lucide-react";
 import { formatCurrency, formatPercent } from "../../utils/formatters";
 import api from "../../api/client";
 
@@ -11,6 +11,16 @@ interface VarianceItem {
   category: string; categoryType: string; allocated: number; spent: number;
   variance: number; variancePercent: number; status: string;
 }
+
+const EMPTY_BUDGET = {
+  totalAllocated: 0, totalSpent: 0, totalRemaining: 0, utilizationRate: 0,
+  byCategory: [] as Array<{ category: string; allocated: number; spent: number; utilization: number }>,
+};
+
+const EMPTY_VARIANCE = {
+  categories: [] as VarianceItem[],
+  summary: { overBudget: 0, warning: 0, onTrack: 0 },
+};
 
 export default function AdminFinance() {
   const [budgetSummary, setBudgetSummary] = useState<{ totalAllocated: number; totalSpent: number; totalRemaining: number; utilizationRate: number; byCategory: Array<{ category: string; allocated: number; spent: number; utilization: number }> } | null>(null);
@@ -27,29 +37,20 @@ export default function AdminFinance() {
         api.get("/finance/variance-analysis"),
         api.get("/finance/cost-centers"),
       ]);
-      if (budgetRes.status === "fulfilled") setBudgetSummary(budgetRes.value.data.data);
-      if (varianceRes.status === "fulfilled") setVariance(varianceRes.value.data.data);
-      if (ccRes.status === "fulfilled") setCostCenters(ccRes.value.data.data || []);
-    } catch { /* silent */ }
-    finally { setLoading(false); }
+      const budgetData = budgetRes.status === "fulfilled" ? budgetRes.value.data.data : null;
+      const varianceData = varianceRes.status === "fulfilled" ? varianceRes.value.data.data : null;
+      const ccData = ccRes.status === "fulfilled" ? (ccRes.value.data.data || []) : [];
+      setBudgetSummary(budgetData || EMPTY_BUDGET);
+      setVariance(varianceData || EMPTY_VARIANCE);
+      setCostCenters(ccData);
+    } catch {
+      setBudgetSummary(EMPTY_BUDGET);
+      setVariance(EMPTY_VARIANCE);
+      setCostCenters([]);
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-
-  const generateReport = async (type: string) => {
-    try {
-      const now = new Date();
-      const startOfYear = `${now.getFullYear()}-01-01`;
-      const today = now.toISOString().slice(0, 10);
-      await api.post("/finance/reports/generate", {
-        name: `${type} Report — ${now.getFullYear()}`,
-        type,
-        periodStart: startOfYear,
-        periodEnd: today,
-      });
-      setToast({ message: `${type} report generated`, type: "success" });
-    } catch { setToast({ message: "Failed to generate report", type: "error" }); }
-  };
 
   if (loading) return <PageWrapper title="Finance Administration" subtitle="Admin View"><LoadingSpinner /></PageWrapper>;
 
@@ -57,7 +58,7 @@ export default function AdminFinance() {
   const statusColors: Record<string, string> = { over_budget: "danger", warning: "warning", on_track: "success", under_budget: "info" };
 
   return (
-    <PageWrapper title="Finance Administration" subtitle="Admin View — Budget oversight, variance analysis, reports">
+    <PageWrapper title="Finance Administration" subtitle="Admin View - Budget oversight, variance analysis, reports">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -65,13 +66,6 @@ export default function AdminFinance() {
         <StatCard title="Total Spent" value={formatCurrency(b?.totalSpent || 0)} icon={<TrendingUp size={20} />} />
         <StatCard title="Utilization" value={formatPercent(b?.utilizationRate || 0)} icon={<PieChart size={20} />} />
         <StatCard title="Over Budget" value={String(variance?.summary?.overBudget || 0)} icon={<AlertTriangle size={20} />} />
-      </div>
-
-      {/* Quick Actions */}
-      <div className="flex gap-2 mb-6">
-        <Button variant="secondary" onClick={() => generateReport("income_statement")}><FileBarChart size={14} /> Income Statement</Button>
-        <Button variant="secondary" onClick={() => generateReport("balance_sheet")}><FileBarChart size={14} /> Balance Sheet</Button>
-        <Button variant="secondary" onClick={() => generateReport("cash_flow")}><FileBarChart size={14} /> Cash Flow</Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

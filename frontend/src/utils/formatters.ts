@@ -5,23 +5,26 @@ export function cn(...inputs: ClassValue[]): string {
 }
 
 export function formatCurrency(value: number, currency: string = "USD"): string {
+  const safe = typeof value === "number" && isFinite(value) ? value : 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(safe);
 }
 
 export function formatNumber(value: number, decimals: number = 0): string {
+  const safe = typeof value === "number" && isFinite(value) ? value : 0;
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
-  }).format(value);
+  }).format(safe);
 }
 
 export function formatPercent(value: number, decimals: number = 1): string {
-  return `${value.toFixed(decimals)}%`;
+  const safe = typeof value === "number" && isFinite(value) ? value : 0;
+  return `${safe.toFixed(decimals)}%`;
 }
 
 export function formatDate(dateStr: string): string {
@@ -91,7 +94,7 @@ export const MODULES = [
   { key: "finance", label: "Finance", icon: "DollarSign" },
   { key: "accounting", label: "Accounting", icon: "Calculator" },
   { key: "ict", label: "ICT Management", icon: "Monitor" },
-  { key: "construction", label: "Construction", icon: "HardHat" },
+  { key: "construction", label: "Projects", icon: "HardHat" },
   { key: "workforce", label: "Workforce Analytics", icon: "BarChart3" },
   { key: "predictive", label: "Predictive Analytics", icon: "TrendingUp" },
   { key: "alerts", label: "Alerts", icon: "Bell" },

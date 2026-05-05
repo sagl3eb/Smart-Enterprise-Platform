@@ -119,12 +119,13 @@ interface TextareaProps {
   onChange: (val: string) => void;
   rows?: number;
   placeholder?: string;
+  required?: boolean;
 }
 
-export function FormTextarea({ label, value, onChange, rows = 3, placeholder }: TextareaProps) {
+export function FormTextarea({ label, value, onChange, rows = 3, placeholder, required }: TextareaProps) {
   return (
     <div>
-      <label className="block text-xs font-medium text-[#4C4566] dark:text-[#B8AEDD] mb-1">{label}</label>
+      <label className="block text-xs font-medium text-[#4C4566] dark:text-[#B8AEDD] mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}

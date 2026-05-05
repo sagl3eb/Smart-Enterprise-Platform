@@ -64,7 +64,7 @@ export default function ChartOfAccounts() {
   const parentOptions = accounts.map((a) => ({ value: a.id, label: `${a.accountCode} - ${a.name}` }));
 
   return (
-    <PageWrapper title="Chart of Accounts" subtitle="Accounting — Account structure">
+    <PageWrapper title="Chart of Accounts" subtitle="Accounting - Account structure">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">

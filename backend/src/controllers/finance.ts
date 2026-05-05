@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { AuthenticatedRequest } from "../middleware/auth";
+import { ScopedRequest, readOrgFilter, writeOrgId } from "../middleware/callerScope";
 import financeService, { FinanceError } from "../services/finance";
 import {
   sendSuccess,
@@ -14,12 +14,13 @@ import logger from "../utils/logger";
 
 // ─── BUDGET CATEGORIES ─────────────────────────────────────
 
-async function getBudgetCategories(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getBudgetCategories(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { isActive, type } = req.query;
     const categories = await financeService.getBudgetCategories({
       isActive: isActive !== undefined ? isActive === "true" : undefined,
       type: type as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
     sendSuccess(res, categories, "Budget categories retrieved");
   } catch (error) {
@@ -28,9 +29,9 @@ async function getBudgetCategories(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function createBudgetCategory(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createBudgetCategory(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, code, type, description } = req.body;
+    const { name, code, type, description, organizationId: bodyOrgId } = req.body;
     if (!name || !code || !type) {
       sendBadRequest(res, "Name, code, and type are required");
       return;
@@ -39,7 +40,11 @@ async function createBudgetCategory(req: AuthenticatedRequest, res: Response): P
       sendBadRequest(res, "Type must be: revenue, expense, or capital");
       return;
     }
-    const category = await financeService.createBudgetCategory({ name, code, type, description });
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
+    const category = await financeService.createBudgetCategory({
+      name, code, type, description,
+      organizationId: orgId,
+    });
     sendCreated(res, category, "Budget category created");
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -51,11 +56,13 @@ async function createBudgetCategory(req: AuthenticatedRequest, res: Response): P
   }
 }
 
-async function updateBudgetCategory(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateBudgetCategory(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const category = await financeService.updateBudgetCategory(req.params.id, req.body);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const category = await financeService.updateBudgetCategory(req.params.id, req.body, orgFilter);
     sendSuccess(res, category, "Budget category updated");
   } catch (error) {
+    if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
     logger.error("Update budget category error:", error);
     sendError(res, "Failed to update budget category");
   }
@@ -63,7 +70,7 @@ async function updateBudgetCategory(req: AuthenticatedRequest, res: Response): P
 
 // ─── ANNUAL BUDGETS ────────────────────────────────────────
 
-async function getAnnualBudgets(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getAnnualBudgets(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { fiscalYear, categoryId, status } = req.query;
@@ -73,6 +80,7 @@ async function getAnnualBudgets(req: AuthenticatedRequest, res: Response): Promi
       fiscalYear: fiscalYear ? parseInt(fiscalYear as string, 10) : undefined,
       categoryId: categoryId as string,
       status: status as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.budgets, result.total, page, limit, "Annual budgets retrieved");
@@ -82,9 +90,10 @@ async function getAnnualBudgets(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function getAnnualBudgetById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getAnnualBudgetById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const budget = await financeService.getAnnualBudgetById(req.params.id);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const budget = await financeService.getAnnualBudgetById(req.params.id, orgFilter);
     if (!budget) { sendNotFound(res, "Annual budget"); return; }
     sendSuccess(res, budget, "Annual budget retrieved");
   } catch (error) {
@@ -93,16 +102,18 @@ async function getAnnualBudgetById(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function createAnnualBudget(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createAnnualBudget(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { categoryId, fiscalYear, allocatedAmount, notes } = req.body;
+    const { categoryId, fiscalYear, allocatedAmount, notes, organizationId: bodyOrgId } = req.body;
     if (!categoryId || !fiscalYear || allocatedAmount === undefined) {
       sendBadRequest(res, "Category ID, fiscal year, and allocated amount are required");
       return;
     }
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
     const budget = await financeService.createAnnualBudget({
       categoryId, fiscalYear: Number(fiscalYear),
       allocatedAmount: Number(allocatedAmount), notes,
+      organizationId: orgId,
     });
     sendCreated(res, budget, "Annual budget created");
   } catch (error) {
@@ -112,12 +123,13 @@ async function createAnnualBudget(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-async function updateAnnualBudget(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateAnnualBudget(req: ScopedRequest, res: Response): Promise<void> {
   try {
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const budget = await financeService.updateAnnualBudget(req.params.id, {
       ...req.body,
       allocatedAmount: req.body.allocatedAmount !== undefined ? Number(req.body.allocatedAmount) : undefined,
-    });
+    }, orgFilter);
     sendSuccess(res, budget, "Annual budget updated");
   } catch (error) {
     if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
@@ -126,11 +138,13 @@ async function updateAnnualBudget(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-async function getBudgetSummary(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getBudgetSummary(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { fiscalYear } = req.query;
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const summary = await financeService.getBudgetSummary(
-      fiscalYear ? parseInt(fiscalYear as string, 10) : undefined
+      fiscalYear ? parseInt(fiscalYear as string, 10) : undefined,
+      orgFilter
     );
     sendSuccess(res, summary, "Budget summary retrieved");
   } catch (error) {
@@ -141,7 +155,7 @@ async function getBudgetSummary(req: AuthenticatedRequest, res: Response): Promi
 
 // ─── TRANSACTIONS ──────────────────────────────────────────
 
-async function getTransactions(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getTransactions(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { type, category, costCenterId, status, startDate, endDate, search, minAmount, maxAmount } = req.query;
@@ -157,6 +171,7 @@ async function getTransactions(req: AuthenticatedRequest, res: Response): Promis
       search: search as string,
       minAmount: minAmount ? Number(minAmount) : undefined,
       maxAmount: maxAmount ? Number(maxAmount) : undefined,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.transactions, result.total, page, limit, "Transactions retrieved");
@@ -166,9 +181,10 @@ async function getTransactions(req: AuthenticatedRequest, res: Response): Promis
   }
 }
 
-async function getTransactionById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getTransactionById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const transaction = await financeService.getTransactionById(req.params.id);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const transaction = await financeService.getTransactionById(req.params.id, orgFilter);
     if (!transaction) { sendNotFound(res, "Transaction"); return; }
     sendSuccess(res, transaction, "Transaction retrieved");
   } catch (error) {
@@ -177,9 +193,9 @@ async function getTransactionById(req: AuthenticatedRequest, res: Response): Pro
   }
 }
 
-async function createTransaction(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createTransaction(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { type, category, amount, currency, description, reference, costCenterId, transactionDate } = req.body;
+    const { type, category, amount, currency, description, reference, costCenterId, transactionDate, organizationId: bodyOrgId } = req.body;
     if (!type || !category || amount === undefined || !transactionDate) {
       sendBadRequest(res, "Type, category, amount, and transaction date are required");
       return;
@@ -189,10 +205,12 @@ async function createTransaction(req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
     const transaction = await financeService.createTransaction({
       type, category, amount: Number(amount), currency, description,
       reference, costCenterId, transactionDate,
       createdBy: req.user?.userId,
+      organizationId: orgId,
     });
     sendCreated(res, transaction, "Transaction created");
   } catch (error) {
@@ -202,12 +220,13 @@ async function createTransaction(req: AuthenticatedRequest, res: Response): Prom
   }
 }
 
-async function updateTransaction(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateTransaction(req: ScopedRequest, res: Response): Promise<void> {
   try {
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const transaction = await financeService.updateTransaction(req.params.id, {
       ...req.body,
       amount: req.body.amount !== undefined ? Number(req.body.amount) : undefined,
-    });
+    }, orgFilter);
     sendSuccess(res, transaction, "Transaction updated");
   } catch (error) {
     if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
@@ -216,9 +235,10 @@ async function updateTransaction(req: AuthenticatedRequest, res: Response): Prom
   }
 }
 
-async function deleteTransaction(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteTransaction(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await financeService.deleteTransaction(req.params.id);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    await financeService.deleteTransaction(req.params.id, orgFilter);
     sendSuccess(res, null, "Transaction deleted");
   } catch (error) {
     if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
@@ -227,11 +247,12 @@ async function deleteTransaction(req: AuthenticatedRequest, res: Response): Prom
   }
 }
 
-async function getTransactionStats(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getTransactionStats(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { startDate, endDate } = req.query;
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const stats = await financeService.getTransactionStats(
-      startDate as string, endDate as string
+      startDate as string, endDate as string, orgFilter
     );
     sendSuccess(res, stats, "Transaction statistics retrieved");
   } catch (error) {
@@ -242,7 +263,7 @@ async function getTransactionStats(req: AuthenticatedRequest, res: Response): Pr
 
 // ─── FINANCIAL REPORTS ─────────────────────────────────────
 
-async function getFinancialReports(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getFinancialReports(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { page, limit, skip } = parsePagination(req.query as { page?: string; limit?: string });
     const { type, status } = req.query;
@@ -251,6 +272,7 @@ async function getFinancialReports(req: AuthenticatedRequest, res: Response): Pr
       page, limit, skip,
       type: type as string,
       status: status as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
 
     sendPaginated(res, result.reports, result.total, page, limit, "Financial reports retrieved");
@@ -260,9 +282,10 @@ async function getFinancialReports(req: AuthenticatedRequest, res: Response): Pr
   }
 }
 
-async function getFinancialReportById(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getFinancialReportById(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const report = await financeService.getFinancialReportById(req.params.id);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    const report = await financeService.getFinancialReportById(req.params.id, orgFilter);
     if (!report) { sendNotFound(res, "Financial report"); return; }
     sendSuccess(res, report, "Financial report retrieved");
   } catch (error) {
@@ -271,16 +294,18 @@ async function getFinancialReportById(req: AuthenticatedRequest, res: Response):
   }
 }
 
-async function generateFinancialReport(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function generateFinancialReport(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, type, periodStart, periodEnd } = req.body;
+    const { name, type, periodStart, periodEnd, organizationId: bodyOrgId } = req.body;
     if (!name || !type || !periodStart || !periodEnd) {
       sendBadRequest(res, "Name, type, period start, and period end are required");
       return;
     }
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
     const report = await financeService.generateFinancialReport({
       name, type, periodStart, periodEnd,
       generatedBy: req.user?.userId,
+      organizationId: orgId,
     });
     sendCreated(res, report, "Financial report generated");
   } catch (error) {
@@ -291,12 +316,13 @@ async function generateFinancialReport(req: AuthenticatedRequest, res: Response)
 
 // ─── COST CENTERS ──────────────────────────────────────────
 
-async function getCostCenters(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getCostCenters(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { isActive, departmentId } = req.query;
     const centers = await financeService.getCostCenters({
       isActive: isActive !== undefined ? isActive === "true" : undefined,
       departmentId: departmentId as string,
+      organizationId: req.scope ? readOrgFilter(req.scope) : undefined,
     });
     sendSuccess(res, centers, "Cost centers retrieved");
   } catch (error) {
@@ -305,13 +331,15 @@ async function getCostCenters(req: AuthenticatedRequest, res: Response): Promise
   }
 }
 
-async function createCostCenter(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function createCostCenter(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    const { name, code, departmentId, budgetLimit } = req.body;
+    const { name, code, departmentId, budgetLimit, organizationId: bodyOrgId } = req.body;
     if (!name || !code) { sendBadRequest(res, "Name and code are required"); return; }
+    const orgId = req.scope ? writeOrgId(req.scope, bodyOrgId) : undefined;
     const center = await financeService.createCostCenter({
       name, code, departmentId,
       budgetLimit: budgetLimit !== undefined ? Number(budgetLimit) : undefined,
+      organizationId: orgId,
     });
     sendCreated(res, center, "Cost center created");
   } catch (error) {
@@ -324,22 +352,25 @@ async function createCostCenter(req: AuthenticatedRequest, res: Response): Promi
   }
 }
 
-async function updateCostCenter(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function updateCostCenter(req: ScopedRequest, res: Response): Promise<void> {
   try {
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const center = await financeService.updateCostCenter(req.params.id, {
       ...req.body,
       budgetLimit: req.body.budgetLimit !== undefined ? Number(req.body.budgetLimit) : undefined,
-    });
+    }, orgFilter);
     sendSuccess(res, center, "Cost center updated");
   } catch (error) {
+    if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
     logger.error("Update cost center error:", error);
     sendError(res, "Failed to update cost center");
   }
 }
 
-async function deleteCostCenter(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function deleteCostCenter(req: ScopedRequest, res: Response): Promise<void> {
   try {
-    await financeService.deleteCostCenter(req.params.id);
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
+    await financeService.deleteCostCenter(req.params.id, orgFilter);
     sendSuccess(res, null, "Cost center deleted");
   } catch (error) {
     if (error instanceof FinanceError) { sendError(res, error.message, error.statusCode); return; }
@@ -350,11 +381,13 @@ async function deleteCostCenter(req: AuthenticatedRequest, res: Response): Promi
 
 // ─── VARIANCE ANALYSIS ────────────────────────────────────
 
-async function getVarianceAnalysis(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getVarianceAnalysis(req: ScopedRequest, res: Response): Promise<void> {
   try {
     const { fiscalYear } = req.query;
+    const orgFilter = req.scope ? readOrgFilter(req.scope) : undefined;
     const analysis = await financeService.getVarianceAnalysis(
-      fiscalYear ? parseInt(fiscalYear as string, 10) : undefined
+      fiscalYear ? parseInt(fiscalYear as string, 10) : undefined,
+      orgFilter
     );
     sendSuccess(res, analysis, "Variance analysis retrieved");
   } catch (error) {

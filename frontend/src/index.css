@@ -13,6 +13,15 @@
   --accent-lt: #7C3AED;
   --gold: #B45309;
   --gold-vivid: #D97706;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #E8E4F3;
+  --chart-tooltip-fg: #1E1B2E;
+}
+
+.dark {
+  --chart-tooltip-bg: #16122E;
+  --chart-tooltip-border: #2E2850;
+  --chart-tooltip-fg: #EDE9FE;
 }
 
 body {
@@ -39,3 +48,117 @@ body {
 .dark ::-webkit-scrollbar-thumb {
   background: #6B5F8F;
 }
+
+/* Zebra striping for tables */
+tbody tr:nth-child(even) {
+  background-color: rgba(237, 233, 254, 0.3);
+}
+
+.dark tbody tr:nth-child(even) {
+  background-color: rgba(45, 31, 94, 0.2);
+}
+
+/* Smooth transitions for interactive elements */
+button, a, input, select {
+  transition: all 0.15s ease;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid #5B21B6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Dark mode text contrast fixes ─────────────────────────
+   Many components use tailwind arbitrary hex colors for muted text
+   that are too dim on the dark surface. Bump them globally so grey
+   text stays readable without touching every component. */
+.dark .text-\[\#9B93B8\] { color: #C8BFE6 !important; }
+.dark .text-\[\#4C4566\] { color: #D4CCEF !important; }
+.dark .text-\[\#6B5F8F\] { color: #B8AEDD !important; }
+.dark .text-\[\#B8AEDD\] { color: #D4CCEF !important; }
+.dark .text-\[\#A89FC8\] { color: #D4CCEF !important; }
+
+/* Placeholder text in inputs on dark */
+.dark input::placeholder,
+.dark textarea::placeholder,
+.dark select::placeholder { color: #9A8FC5 !important; }
+
+/* Make sure default body text has enough contrast in dark */
+.dark body { color: #EDE9FE; }
+
+/* Table header cells often use 9B93B8 — ensure readable */
+.dark thead th { color: #C8BFE6 !important; }
+
+/* Badges and small labels */
+.dark .text-xs, .dark .text-\[11px\], .dark .text-\[10px\] {
+  /* don't force color on elements that already have explicit colors set */
+}
+
+/* ─── Dark mode visibility audit — site-wide fallbacks ────────
+   Components throughout the app use plain Tailwind grays without
+   dark: variants. Without these overrides the text becomes
+   illegible on the dark surface. Force a readable colour on the
+   dark theme so every page stays usable.                       */
+.dark .text-gray-400 { color: #C8BFE6 !important; }
+.dark .text-gray-500 { color: #D4CCEF !important; }
+.dark .text-gray-600 { color: #D4CCEF !important; }
+.dark .text-gray-700 { color: #EDE9FE !important; }
+.dark .text-gray-800 { color: #EDE9FE !important; }
+.dark .text-gray-900 { color: #F4F1FF !important; }
+.dark .text-slate-500 { color: #D4CCEF !important; }
+.dark .text-slate-600 { color: #D4CCEF !important; }
+.dark .text-slate-700 { color: #EDE9FE !important; }
+.dark .text-slate-800 { color: #EDE9FE !important; }
+.dark .text-slate-900 { color: #F4F1FF !important; }
+.dark .text-zinc-500 { color: #D4CCEF !important; }
+.dark .text-zinc-600 { color: #D4CCEF !important; }
+.dark .text-zinc-700 { color: #EDE9FE !important; }
+.dark .text-zinc-800 { color: #EDE9FE !important; }
+.dark .text-zinc-900 { color: #F4F1FF !important; }
+.dark .text-neutral-500 { color: #D4CCEF !important; }
+.dark .text-neutral-600 { color: #D4CCEF !important; }
+.dark .text-neutral-700 { color: #EDE9FE !important; }
+.dark .text-neutral-800 { color: #EDE9FE !important; }
+.dark .text-neutral-900 { color: #F4F1FF !important; }
+
+/* Backgrounds: bg-white / very-light surfaces — only override when
+   the element didn't already supply a dark: variant. A plain
+   bg-white with no dark variant becomes unreadable; remap to the
+   surface tone used elsewhere. */
+.dark *:not([class*="dark:bg-"]).bg-white { background-color: #16122E !important; }
+.dark *:not([class*="dark:bg-"]).bg-gray-50 { background-color: #0E0B1F !important; }
+.dark *:not([class*="dark:bg-"]).bg-gray-100 { background-color: #1A1635 !important; }
+.dark *:not([class*="dark:bg-"]).bg-slate-50 { background-color: #0E0B1F !important; }
+.dark *:not([class*="dark:bg-"]).bg-slate-100 { background-color: #1A1635 !important; }
+.dark *:not([class*="dark:bg-"]).bg-zinc-50 { background-color: #0E0B1F !important; }
+.dark *:not([class*="dark:bg-"]).bg-neutral-50 { background-color: #0E0B1F !important; }
+
+/* Borders fall-back so cards/dividers don't disappear on dark */
+.dark *:not([class*="dark:border-"]).border-gray-200 { border-color: #2E2850 !important; }
+.dark *:not([class*="dark:border-"]).border-gray-300 { border-color: #2E2850 !important; }
+.dark *:not([class*="dark:border-"]).border-slate-200 { border-color: #2E2850 !important; }
+
+/* Inputs without dark variants get a usable background + text */
+.dark input:not([class*="dark:bg-"]),
+.dark textarea:not([class*="dark:bg-"]),
+.dark select:not([class*="dark:bg-"]) {
+  background-color: #16122E;
+  color: #EDE9FE;
+}
+
+/* Hover states with light bg */
+.dark *.hover\:bg-gray-50:hover,
+.dark *.hover\:bg-gray-100:hover,
+.dark *.hover\:bg-slate-50:hover { background-color: #1A1635 !important; }
+
+/* Recharts axis labels, tooltip cursor, legend text on dark.
+   Recharts inlines `fill: #9B93B8` etc. — bump for legibility. */
+.dark .recharts-cartesian-axis-tick text,
+.dark .recharts-legend-item-text,
+.dark .recharts-pie-label-text,
+.dark .recharts-text { fill: #C8BFE6 !important; }
+
+/* Fix `text-white` on light surface when used inside a dark container
+   that we override above — leave white text intact since contrast is fine. */

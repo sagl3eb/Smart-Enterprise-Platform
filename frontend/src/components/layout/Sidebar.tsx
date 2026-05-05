@@ -1,13 +1,30 @@
 import { NavLink, useLocation } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard, Users, DollarSign, Calculator, Monitor,
   HardHat, BarChart3, TrendingUp, Bell, MessageSquare, Settings, LogOut, Shield,
+  Calendar, Ticket, Laptop, BookUser,
 } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import { cn } from "../../utils/formatters";
 
-const allNavItems = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, module: "dashboard" },
+// Always visible to every authenticated employee — no module required
+const selfServiceItems = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/directory", label: "Directory", icon: BookUser },
+  { to: "/me/leaves", label: "My Leaves", icon: Calendar },
+  { to: "/me/tickets", label: "My Tickets", icon: Ticket },
+  { to: "/me/assets", label: "My Assets", icon: Laptop },
+];
+
+// Admins (and super admins) don't get a personal workspace — they manage modules.
+const adminSelfServiceItems = [
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/directory", label: "Directory", icon: BookUser },
+];
+
+// Module-gated: unlocks manager-level views over each domain
+const moduleItems = [
   { to: "/hr", label: "HR Management", icon: Users, module: "hr" },
   { to: "/finance", label: "Finance", icon: DollarSign, module: "finance" },
   { to: "/accounting", label: "Accounting", icon: Calculator, module: "accounting" },
@@ -16,7 +33,11 @@ const allNavItems = [
   { to: "/workforce", label: "Workforce Analytics", icon: BarChart3, module: "workforce" },
   { to: "/predictive", label: "Predictive Analytics", icon: TrendingUp, module: "predictive" },
   { to: "/alerts", label: "Alerts", icon: Bell, module: "alerts" },
-  { to: "/chatbot", label: "Chatbot", icon: MessageSquare, module: null },
+];
+
+// Always visible — standalone tool
+const alwaysItems = [
+  { to: "/chatbot", label: "Chatbot", icon: MessageSquare },
 ];
 
 export default function Sidebar() {
@@ -24,15 +45,16 @@ export default function Sidebar() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
 
-  // Filter nav items based on user's module access
   const userModules = (user as unknown as { moduleAccess?: string[] })?.moduleAccess || [];
-  const isAdmin = user?.role.name === "admin" || user?.role.name === "super_admin";
+  const role = user?.role.name;
+  const isAdmin = role === "admin" || role === "super_admin";
+  const isSuperAdmin = role === "super_admin";
 
-  const navItems = allNavItems.filter((item) => {
-    if (item.module === null) return true; // chatbot always visible
-    if (isAdmin) return true; // admins see everything
-    return userModules.includes(item.module);
-  });
+  // Super admin only manages users + organizations — no operational modules.
+  const visibleModules = isSuperAdmin
+    ? []
+    : moduleItems.filter((item) => isAdmin || userModules.includes(item.module));
+  const personalItems = isAdmin ? adminSelfServiceItems : selfServiceItems;
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-[230px] flex flex-col z-40"
@@ -51,29 +73,17 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.to || (item.to !== "/dashboard" && location.pathname.startsWith(item.to));
-          const Icon = item.icon;
+        <NavSection label={isAdmin ? "Overview" : "My Space"} items={personalItems} location={location} />
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all duration-150",
-                isActive ? "text-white" : "hover:text-white"
-              )}
-              style={{
-                color: isActive ? "#F1EEFF" : "#A89FC8",
-                background: isActive ? "#1A1635" : "transparent",
-                ...(isActive ? { boxShadow: "inset 3px 0 0 0 #7C3AED" } : {}),
-              }}
-            >
-              <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
-              {item.label}
-            </NavLink>
-          );
-        })}
+        {visibleModules.length > 0 && (
+          <>
+            <div className="h-px mx-2 my-3" style={{ background: "#2A2550" }} />
+            <NavSection label="Modules" items={visibleModules} location={location} />
+          </>
+        )}
+
+        <div className="h-px mx-2 my-3" style={{ background: "#2A2550" }} />
+        <NavSection items={alwaysItems} location={location} />
       </nav>
 
       {/* Bottom section */}
@@ -125,5 +135,41 @@ export default function Sidebar() {
         )}
       </div>
     </aside>
+  );
+}
+
+type NavItem = { to: string; label: string; icon: LucideIcon; module?: string };
+
+function NavSection({ label, items, location }: { label?: string; items: NavItem[]; location: ReturnType<typeof useLocation> }) {
+  return (
+    <div className="space-y-0.5">
+      {label && (
+        <div className="px-3 pt-1 pb-1.5 text-[9px] font-semibold tracking-[0.16em] uppercase"
+          style={{ color: "#6B5F8F" }}>
+          {label}
+        </div>
+      )}
+      {items.map((item) => {
+        const isActive = location.pathname === item.to ||
+          (item.to !== "/dashboard" && location.pathname.startsWith(item.to + "/")) ||
+          (item.to !== "/dashboard" && location.pathname === item.to);
+        const Icon = item.icon;
+        return (
+          <NavLink key={item.to} to={item.to}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-all duration-150",
+              isActive ? "text-white" : "hover:text-white"
+            )}
+            style={{
+              color: isActive ? "#F1EEFF" : "#A89FC8",
+              background: isActive ? "#1A1635" : "transparent",
+              ...(isActive ? { boxShadow: "inset 3px 0 0 0 #7C3AED" } : {}),
+            }}>
+            <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+            {item.label}
+          </NavLink>
+        );
+      })}
+    </div>
   );
 }
