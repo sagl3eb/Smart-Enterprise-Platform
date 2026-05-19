@@ -80,10 +80,7 @@ export function blockViewerWrites(
   next();
 }
 
-// Super admins must not see operational module data (HR, Finance, Accounting,
-// ICT, Projects, Workforce, Predictive, Alerts). They retain full access only
-// on user and organization management (/api/v1/auth/users and
-// /api/v1/auth/organizations). Apply this to module routes, not to /auth.
+
 export function blockSuperAdminModuleWrites(
   req: AuthenticatedRequest,
   res: Response,
