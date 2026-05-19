@@ -131,7 +131,6 @@ ml-service/ FastAPI + scikit-learn + Prophet
     data/           CSV training data (revenue, headcount, tickets, …)
     models/         persisted model artefacts (Docker volume)
 docker-compose.yml
-SYSTEM_CHECKLIST.md  end-to-end manual test pass
 ```
 
 ---
